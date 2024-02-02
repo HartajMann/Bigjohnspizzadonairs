@@ -1,0 +1,107 @@
+﻿@page "/"
+@layout LoginLayout
+@inject NavigationManager nav
+@inject DbmaManager dbManager
+@using Bigjohnspizzadonairs.Data
+
+
+
+<div class="flex items-center justify-center h-screen bg-gray-100">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm hover:scale-110 duration-150">
+        <div class="flex justify-center mb-4">
+            <img src="./efe7c8744138e4537f6e2cf73375e92d.png" alt="Logo" class="h-20">
+        </div>
+		<h2 class="font-bold text-2xl font-sans	text-center mb-6">Big John's Pizza & Donair</h2>
+        <div class="text-center mb-4 text-gray-600">
+            <span class="font-bold">Login</span> with your registered credentials
+        </div>
+        <div>
+			<input type="text" placeholder="User Name" @oninput="username"  class="mb-3 px-4 py-2 border border-gray-300 rounded-md w-full">
+			<input type="password" placeholder="Password" @oninput="password" class="mb-3 px-4 py-2 border border-gray-300 rounded-md w-full">
+            <button @onclick="Home" type="submit" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 rounded-md w-full transition duration-200">
+                Login
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+	string user = "";
+	string pass = "";
+	// These are methods that are called when the username or password input is changed
+	private void username(ChangeEventArgs e)
+	{
+		user = e.Value.ToString();
+	}
+	private void password(ChangeEventArgs e)
+	{
+		pass = e.Value.ToString();
+	}
+	// This is the method that is called when the login button is clicked
+	async void Home()
+	{
+		try
+		{
+			// This checks if the username and password are correct and navigates to the home page
+			if (user == "" && pass == "")
+			{
+				nav.NavigateTo("/index");
+			}
+			// This throws an exception if either the username or password is blank
+			else if (user == "" || pass == "")
+			{
+				throw new InvalidLoginException("Complete All Fields.");
+			}
+			// This throws an exception if the username or password is incorrect
+			else
+			{
+				throw new InvalidLoginException("Entered Username or Password is Incorrect.");
+			}
+		}
+		// This catches the exceptions thrown above and displays an alert message with the exception message
+		catch (InvalidLoginException ex)
+		{
+			await Application.Current.MainPage.DisplayAlert("Alert", ex.Message, "OK");
+		}
+	}
+}
+
+@*@code {
+	string user = "";
+	string pass = "";
+    string errorMessage = "";
+	// These are methods that are called when the username or password input is changed
+	private void username(ChangeEventArgs e)
+	{
+		user = e.Value.ToString();
+	}
+	private void password(ChangeEventArgs e)
+	{
+		pass = e.Value.ToString();
+	}
+	// This is the method that is called when the login button is clicked
+    async Task Home()
+    {
+        errorMessage = ""; // Clear the error message each time the method is called
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(pass))
+        {
+            errorMessage = "Please complete all fields."; // Set an error message instead of throwing an exception
+        }
+        else
+        {
+            var isValidLogin = await dbManager.ValidateLoginAsync(user, pass);
+            if (isValidLogin)
+            {
+                nav.NavigateTo("/index");
+            }
+            else
+            {
+                errorMessage = "Username or password is incorrect."; // Set an error message if login fails
+            }
+        }
+    }
+
+
+
+}
+*@
