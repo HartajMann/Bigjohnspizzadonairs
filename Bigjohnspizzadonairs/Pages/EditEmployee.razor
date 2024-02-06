@@ -1,0 +1,117 @@
+﻿@page "/edit-employee"
+
+<div class="container mx-auto p-6">
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="mb-6">
+            <h1 class="text-xl font-bold text-gray-900">Edit Employee Details</h1>
+        </div>
+        <form>
+            <div class="flex flex-wrap -mx-3 mb-6 ">
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                        Name
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" type="text" placeholder="Name">
+                </div>
+                <div class="w-full md:w-1/2 px-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
+                        Email
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" type="email" placeholder="Email">
+                </div>
+            </div>
+
+            <div class="flex flex-wrap -mx-3 mb-6">
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="age">
+                        Age
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="age" type="number" placeholder="Age">
+                </div>
+                <div class="w-full md:w-1/2 px-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="position">
+                        Position
+                    </label>
+                    <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="position" @onchange="UpdatePosition">
+                        <option value="">Select Position</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Employee">Employee</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap -mx-3 mb-6">
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="Contact">
+                        Contact Number
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" type="text" placeholder="Contact No.">
+                </div>
+                <div class="w-full md:w-1/2 px-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="Emergency_contact">
+                        Emergency Contact Number
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Em-contact" type="text" placeholder="Emergency Contact Number">
+                </div>
+            </div>
+            <div class="flex flex-wrap -mx-3 mb-6">
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                    <span class="block text-gray-700 text-2xl font-bold mt-2 mb-2">Change Password</span>
+                </div>
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="old-password">
+                        Enter Old Password
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="old-password" type="password" placeholder="Old Password" @oninput="UpdateOldPassword">
+                </div>
+            </div>
+           
+            <div class="flex flex-wrap -mx-3 mb-6">
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="Password">
+                        Password
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" input type="password" placeholder="Set Password" @oninput="UpdateNewPassword">
+                </div>
+                <div class="w-full md:w-1/2 px-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="Confirm Password">
+                        Confirm Password
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Password" type="password" placeholder="Confirm Password" @oninput="UpdateConfirmPassword">
+                </div>
+            </div>
+            <div class="flex items-center justify-center">
+                <button class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    Add Employee
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@code {
+    string oldPassword = "";
+    string newPassword = "";
+    string confirmNewPassword = "";
+    string position = "";
+
+    private void UpdateOldPassword(ChangeEventArgs e)
+    {
+        oldPassword = e.Value.ToString();
+    }
+
+    private void UpdateNewPassword(ChangeEventArgs e)
+    {
+        newPassword = e.Value.ToString();
+    }
+
+    private void UpdateConfirmPassword(ChangeEventArgs e)
+    {
+        confirmNewPassword = e.Value.ToString();
+    }
+
+    private void UpdatePosition(ChangeEventArgs e)
+    {
+        position = e.Value.ToString();
+    }
+
+}
