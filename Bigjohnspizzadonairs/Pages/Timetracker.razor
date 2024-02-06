@@ -13,9 +13,15 @@
 
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="user-id">
-                    User ID
+                    Employee ID
                 </label>
-                <input @bind="userId" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="user-id" type="text" placeholder="User ID">
+                <input @bind="userId" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="user-id" type="text" placeholder="Employee ID">
+                <div class="mt-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                        Password
+                    </label>
+                    <input @bind="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="password" type="password" placeholder="Password">
+                </div>
                 <button @onclick="HandlePunch" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold rounded-md py-2 px-4 mt-4 transition duration-200">
                     Punch In/Out
                 </button>
@@ -34,6 +40,7 @@
     string userId;
     string lastPunchIn;
     string lastPunchOut;
+    string password;
 
     protected override async Task OnInitializedAsync()
     {
@@ -42,16 +49,23 @@
 
     async Task HandlePunch()
     {
+        // Verify the password first
+        bool passwordVerified = await dbManager.VerifyPasswordAsync(userId, password);
+        if (!passwordVerified)
+        {
+            // Handle incorrect password scenario
+            Console.WriteLine("Incorrect password.");
+            return;
+        }
+
         var (punchIn, punchOut) = await dbManager.GetLastActivityAsync(userId);
 
         if (punchIn.HasValue && !punchOut.HasValue)
         {
-            // User is currently punched in, so punch them out.
             await dbManager.PunchOutAsync(userId);
         }
         else
         {
-            // User is currently punched out, so punch them in.
             await dbManager.PunchInAsync(userId);
         }
 

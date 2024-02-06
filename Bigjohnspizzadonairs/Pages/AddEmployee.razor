@@ -1,4 +1,7 @@
 ﻿@page "/add-employee"
+@using Bigjohnspizzadonairs.Data
+@inject NavigationManager nav
+@inject DbmaManager dbManager
 
 <div class="container mx-auto p-6">
     <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -8,16 +11,16 @@
         <form>
             <div class="flex flex-wrap -mx-3 mb-6 ">
                 <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name" >
                         Name
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" type="text" placeholder="Name">
+                    <input @bind="newEmployee.Name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" type="text" placeholder="Name">
                 </div>
                 <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
                         Email
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" type="email" placeholder="Email">
+                    <input @bind="newEmployee.Email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" type="email" placeholder="Email">
                 </div>
             </div>
 
@@ -26,13 +29,17 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="age">
                         Age
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="age" type="number" placeholder="Age">
+                    <input @bind="newEmployee.Age" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="age" type="number" placeholder="Age">
                 </div>
                 <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="position">
                         Position
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="position" type="text" placeholder="Position">
+                    <select @bind="newEmployee.Position" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="position">
+                        <option value="">Select Position</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Employee">Employee</option>
+                    </select>
                 </div>
             </div>
 
@@ -41,13 +48,13 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="Contact">
                         Contact Number
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" type="text" placeholder="Contact No.">
+                    <input @bind="newEmployee.ContactNumber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" type="text" placeholder="Contact No.">
                 </div>
                 <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="Emergency_contact">
                         Emergency Contact Number
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Em-contact" type="text" placeholder="Emergency Contact Number">
+                    <input @bind="newEmployee.EmergencyContactNumber"  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Em-contact" type="text" placeholder="Emergency Contact Number">
                 </div>
             </div>
             <div class="flex flex-wrap -mx-3 mb-6">
@@ -55,27 +62,65 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="Password">
                          Password
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" input type="password" placeholder="Set Password" @oninput="password">
+                    <input @bind="newEmployee.Password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" input type="password" placeholder="Set Password" @oninput="password">
                 </div>
                 <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="Confirm Password">
                         Confirm Password
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Password" type="password" placeholder="Confirm Password" @oninput="password">
+                    <input @bind="confirmPassword"  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Password" type="password" placeholder="Confirm Password" @oninput="password">
                 </div>
             </div>
             <div class="flex items-center justify-center">
-                <button class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                <button @onclick="EmployeeAdd" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
                     Add Employee
                 </button>
             </div>
         </form>
     </div>
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p class="text-red-500 text-xs italic">@errorMessage</p>
+    }
 </div>
 @code{
-string pass = "";
-	private void password(ChangeEventArgs e)
-	{
-		pass = e.Value.ToString();
-	}
+    private EmployeeModel newEmployee = new EmployeeModel();
+    private string confirmPassword;
+    private string errorMessage;
+    string pass = "";
+
+    private void password(ChangeEventArgs e)
+    {
+        pass = e.Value.ToString();
+    }
+    private async Task EmployeeAdd()
+    {
+        if (string.IsNullOrEmpty(newEmployee.Name) || string.IsNullOrEmpty(newEmployee.Email) ||
+            string.IsNullOrEmpty(newEmployee.Position) || string.IsNullOrEmpty(newEmployee.ContactNumber) ||
+            string.IsNullOrEmpty(newEmployee.EmergencyContactNumber) || newEmployee.Age <= 0)
+        {
+            errorMessage = "All fields are required.";
+            return;
+        }
+
+        if (newEmployee.Password != confirmPassword)
+        {
+            errorMessage = "Passwords do not match.";
+            return;
+        }
+
+        bool result = await dbManager.AddEmployeeAsync(newEmployee);
+        if (result)
+        {
+            // Handle successful employee addition, e.g., navigate to the employee list or clear the form.
+            errorMessage = "Employee added successfully!";
+           // newEmployee = new EmployeeModel(); // Reset the form
+            confirmPassword = string.Empty;
+        }
+        else
+        {
+            errorMessage = "There was an error adding the employee. Please try again.";
+        }
+    }
+}
 }

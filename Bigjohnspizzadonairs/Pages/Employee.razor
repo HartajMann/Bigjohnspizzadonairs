@@ -1,5 +1,7 @@
 ﻿@page "/employee-management"
 @inject NavigationManager nav
+@inject DbmaManager dbManager
+@using Bigjohnspizzadonairs.Data
 
 <div class="container mx-auto p-6">
     <div class="flex justify-between items-center mb-4">
@@ -21,35 +23,55 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y">
-                @for (int i = 0; i < 10; i++)
+                @foreach (var employee in employees)
                 {
                     <tr class="text-gray-700">
-                        <td class="px-4 py-3 text-sm">0112450@(i)</td>
-                        <td class="px-4 py-3 text-sm">Name @(i)</td>
-                        <td class="px-4 py-3 text-sm">123456789</td>
-                        <td class="px-4 py-3 text-sm">@((i + 1) * 2)pcs</td>
+                        <td class="px-4 py-3 text-sm">@employee.EmployeeId</td>
+                        <td class="px-4 py-3 text-sm">@employee.Name</td>
+                        <td class="px-4 py-3 text-sm">@employee.ContactNumber</td>
+                        <td class="px-4 py-3 text-sm">@employee.Position</td>
                         <td class="px-4 py-3 text-sm">
                             <button class="text-blue-600 hover:underline">Change</button>
                         </td>
                         <td class="px-4 py-3 text-sm">
-                            <button class="text-blue-600 hover:underline mr-2" @onclick="NavigateToEditEmployee">Edit</button>
-                            <button class="text-red-600 hover:underline">Delete</button>
+                            <button class="text-blue-600 hover:underline mr-2" @onclick="() => NavigateToEditEmployee(employee.EmployeeId)">Edit</button>
+                            <button class="text-red-600 hover:underline" @onclick="() => DeleteEmployee(employee.EmployeeId)">Delete</button>
                         </td>
                     </tr>
                 }
             </tbody>
-        </table>
+            </table>
     </div>
 </div>
-@code
-{
-	private void NavigateToAddEmployee()
-	{
-		nav.NavigateTo("/add-employee");
-	}
-    private void NavigateToEditEmployee()
+
+    @code {
+        private List<EmployeeModel> employees = new List<EmployeeModel>();
+
+        protected override async Task OnInitializedAsync()
+        {
+            employees = await dbManager.GetAllEmployeesAsync();
+        }
+
+        private void NavigateToAddEmployee()
+        {
+            nav.NavigateTo("/add-employee");
+        }
+    private void NavigateToEditEmployee(int employeeId)
     {
-        nav.NavigateTo("/edit-employee");
+        Console.WriteLine($"Attempting to navigate to edit employee with ID: {employeeId}");
+        nav.NavigateTo($"/edit-employee/{employeeId}");
     }
 
-}
+
+        private async Task DeleteEmployee(int employeeId)
+        {
+            var result = await dbManager.DeleteEmployeeAsync(employeeId);
+            if (result)
+            {
+                employees = await dbManager.GetAllEmployeesAsync(); // Refresh the list
+            }
+            else
+            {
+            }
+        }
+    }

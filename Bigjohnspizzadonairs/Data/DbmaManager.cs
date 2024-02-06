@@ -67,6 +67,18 @@ namespace Bigjohnspizzadonairs.Data
                 return result > 0;
             }
         }
+        public async Task<bool> VerifyPasswordAsync(string userId, string password)
+        {
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var command = new SqlCommand("SELECT Password FROM Employees WHERE EmployeeId = @UserId", connection);
+                command.Parameters.AddWithValue("@UserId", userId);
+
+                var storedPassword = (string)await command.ExecuteScalarAsync();
+                return storedPassword == password;
+            }
+        }
 
         public async Task<(DateTime? punchIn, DateTime? punchOut)> GetLastActivityAsync(string userId)
         {
@@ -89,6 +101,155 @@ namespace Bigjohnspizzadonairs.Data
 
                 await sqlConnection.CloseAsync();
                 return (null, null);
+            }
+        }
+        public async Task<bool> AddEmployeeAsync(EmployeeModel employee)
+        {
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+
+                var command = new SqlCommand(@"
+            INSERT INTO Employees (
+                Name, Email, Age, Position, ContactNumber, EmergencyContactNumber, Password
+            ) VALUES (
+                @Name, @Email, @Age, @Position, @ContactNumber, @EmergencyContactNumber, @Password
+            )", sqlConnection);
+
+                command.Parameters.AddWithValue("@Name", employee.Name);
+                command.Parameters.AddWithValue("@Email", employee.Email);
+                command.Parameters.AddWithValue("@Age", employee.Age);
+                command.Parameters.AddWithValue("@Position", employee.Position);
+                command.Parameters.AddWithValue("@ContactNumber", employee.ContactNumber);
+                command.Parameters.AddWithValue("@EmergencyContactNumber", employee.EmergencyContactNumber);
+                command.Parameters.AddWithValue("@Password", employee.Password); 
+
+                int result = await command.ExecuteNonQueryAsync();
+
+                await sqlConnection.CloseAsync();
+
+                return result > 0;
+            }
+        }
+        public async Task<List<EmployeeModel>> GetAllEmployeesAsync()
+        {
+            var employees = new List<EmployeeModel>();
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+                var command = new SqlCommand("SELECT * FROM Employees", sqlConnection);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        employees.Add(new EmployeeModel
+                        {
+                            EmployeeId = (int)reader["EmployeeId"],
+                            Name = reader["Name"].ToString(),
+                            Email = reader["Email"].ToString(),
+                            Age = (int)reader["Age"],
+                            Position = reader["Position"].ToString(),
+                            ContactNumber = reader["ContactNumber"].ToString(),
+                            EmergencyContactNumber = reader["EmergencyContactNumber"].ToString(),
+                            // Do not retrieve the password
+                        });
+                    }
+                }
+            }
+            return employees;
+        }
+
+        public async Task<bool> DeleteEmployeeAsync(int employeeId)
+        {
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+                var command = new SqlCommand("DELETE FROM Employees WHERE EmployeeId = @EmployeeId", sqlConnection);
+                command.Parameters.AddWithValue("@EmployeeId", employeeId);
+
+                int result = await command.ExecuteNonQueryAsync();
+                return result > 0;
+            }
+        }
+
+        public async Task<EmployeeModel> GetEmployeeAsync(int employeeId)
+        {
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+                var command = new SqlCommand("SELECT * FROM Employees WHERE EmployeeId = @EmployeeId", sqlConnection);
+                command.Parameters.AddWithValue("@EmployeeId", employeeId);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        return new EmployeeModel
+                        {
+                            EmployeeId = (int)reader["EmployeeId"],
+                            Name = reader["Name"].ToString(),
+                            Email = reader["Email"].ToString(),
+                            Age = (int)reader["Age"],
+                            Position = reader["Position"].ToString(),
+                            ContactNumber = reader["ContactNumber"].ToString(),
+                            EmergencyContactNumber = reader["EmergencyContactNumber"].ToString(),
+                            // Password is not directly fetched for security reasons
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
+        public async Task<bool> UpdateEmployeeAsync(EmployeeModel employee, string newPassword = null)
+        {
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+                var commandText = @"UPDATE Employees SET 
+            Name = @Name, Email = @Email, Age = @Age, Position = @Position, 
+            ContactNumber = @ContactNumber, EmergencyContactNumber = @EmergencyContactNumber
+            {0}
+            WHERE EmployeeId = @EmployeeId";
+
+                if (!string.IsNullOrEmpty(newPassword))
+                {
+                    commandText = string.Format(commandText, ", Password = @Password");
+                }
+                else
+                {
+                    commandText = string.Format(commandText, "");
+                }
+
+                var command = new SqlCommand(commandText, sqlConnection);
+
+                command.Parameters.AddWithValue("@Name", employee.Name);
+                command.Parameters.AddWithValue("@Email", employee.Email);
+                command.Parameters.AddWithValue("@Age", employee.Age);
+                command.Parameters.AddWithValue("@Position", employee.Position);
+                command.Parameters.AddWithValue("@ContactNumber", employee.ContactNumber);
+                command.Parameters.AddWithValue("@EmergencyContactNumber", employee.EmergencyContactNumber);
+                command.Parameters.AddWithValue("@EmployeeId", employee.EmployeeId);
+                if (!string.IsNullOrEmpty(newPassword))
+                {
+                    command.Parameters.AddWithValue("@Password", newPassword); // Remember to hash the password in future iterations
+                }
+
+                int result = await command.ExecuteNonQueryAsync();
+                return result > 0;
+            }
+        }
+        public async Task<bool> VerifyOldPasswordAsync(int employeeId, string oldPassword)
+        {
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+                var command = new SqlCommand("SELECT Password FROM Employees WHERE EmployeeId = @EmployeeId", sqlConnection);
+                command.Parameters.AddWithValue("@EmployeeId", employeeId);
+
+                var storedPassword = (string)await command.ExecuteScalarAsync();
+                return storedPassword == oldPassword;
             }
         }
 

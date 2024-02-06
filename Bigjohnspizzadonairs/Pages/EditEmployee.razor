@@ -1,4 +1,7 @@
-﻿@page "/edit-employee"
+﻿@page "/edit-employee/{EmployeeId:int}"
+@inject NavigationManager nav
+@inject DbmaManager dbManager
+@using Bigjohnspizzadonairs.Data
 
 <div class="container mx-auto p-6">
     <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -11,13 +14,13 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
                         Name
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" type="text" placeholder="Name">
+                    <input @bind="employee.Name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" type="text" placeholder="Name">
                 </div>
                 <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
                         Email
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" type="email" placeholder="Email">
+                    <input @bind="employee.Email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" type="email" placeholder="Email">
                 </div>
             </div>
 
@@ -26,13 +29,13 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="age">
                         Age
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="age" type="number" placeholder="Age">
+                    <input @bind="employee.Age"  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="age" type="number" placeholder="Age">
                 </div>
                 <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="position">
                         Position
                     </label>
-                    <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="position" @onchange="UpdatePosition">
+                    <select @bind="employee.Position" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="position" >
                         <option value="">Select Position</option>
                         <option value="Manager">Manager</option>
                         <option value="Employee">Employee</option>
@@ -45,13 +48,13 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="Contact">
                         Contact Number
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" type="text" placeholder="Contact No.">
+                    <input @bind="employee.ContactNumber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" type="text" placeholder="Contact No.">
                 </div>
                 <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="Emergency_contact">
                         Emergency Contact Number
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Em-contact" type="text" placeholder="Emergency Contact Number">
+                    <input @bind="employee.EmergencyContactNumber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Em-contact" type="text" placeholder="Emergency Contact Number">
                 </div>
             </div>
             <div class="flex flex-wrap -mx-3 mb-6">
@@ -71,24 +74,26 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="Password">
                         Password
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" input type="password" placeholder="Set Password" @oninput="UpdateNewPassword">
+                    <input @bind="newPassword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="contact" input type="password" placeholder="Set Password" @oninput="UpdateNewPassword">
                 </div>
                 <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="Confirm Password">
                         Confirm Password
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Password" type="password" placeholder="Confirm Password" @oninput="UpdateConfirmPassword">
+                    <input @bind="confirmNewPassword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="Password" type="password" placeholder="Confirm Password" @oninput="UpdateConfirmPassword">
                 </div>
             </div>
             <div class="flex items-center justify-center">
-                <button class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
-                    Add Employee
+                <button @onclick="HandleUpdate" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    Update Details
                 </button>
             </div>
         </form>
     </div>
 </div>
 @code {
+    [Parameter]
+    public int EmployeeId { get; set; }
     string oldPassword = "";
     string newPassword = "";
     string confirmNewPassword = "";
@@ -112,6 +117,50 @@
     private void UpdatePosition(ChangeEventArgs e)
     {
         position = e.Value.ToString();
+    }
+    private EmployeeModel employee = new EmployeeModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        employee = await dbManager.GetEmployeeAsync(EmployeeId);
+    }
+    private async Task HandleUpdate()
+    {
+        if (!string.IsNullOrEmpty(newPassword) && newPassword == confirmNewPassword)
+        {
+            // Verify old password
+            bool oldPasswordVerified = await dbManager.VerifyOldPasswordAsync(employee.EmployeeId, oldPassword);
+            if (!oldPasswordVerified)
+            {
+                // Handle old password verification failure
+                Console.WriteLine("Old password is incorrect.");
+                return;
+            }
+
+            // Update employee details with new password
+            bool result = await dbManager.UpdateEmployeeAsync(employee, newPassword);
+            if (result)
+            {
+                nav.NavigateTo("/employee-management");
+            }
+            else
+            {
+                // Handle update failure
+            }
+        }
+        else
+        {
+            // Update employee details without changing the password
+            bool result = await dbManager.UpdateEmployeeAsync(employee);
+            if (result)
+            {
+                nav.NavigateTo("/employee-management");
+            }
+            else
+            {
+                // Handle update failure
+            }
+        }
     }
 
 }
