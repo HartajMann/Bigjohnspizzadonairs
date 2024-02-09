@@ -1,0 +1,96 @@
+﻿@page "/availability/{EmployeeId:int}"
+@inject NavigationManager nav
+@inject DbmaManager dbManager
+@using Bigjohnspizzadonairs.Data
+
+<div class="container mx-auto p-6">
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="mb-6 flex">
+            <h1 class="text-xl font-bold text-gray-900 flex-auto w-10">My Availability</h1>
+            <h2 class="text-lg  text-gray-900 flex-auto w-10">Start Time</h2>
+            <h2 class="text-lg  text-gray-900 flex-none">End Time</h2>
+        </div>
+        <form @onsubmit="SubmitAvailability">
+            @foreach (var day in Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>())
+            {
+                <div class="flex items-center justify-between mb-4">
+                    <span class="block text-gray-700 text-sm font-bold mb-2 w-1/6">@day</span>
+
+                    <input type="time" value="@availability[day].StartTime?.ToString("hh\\:mm")" @onchange="(e) => UpdateStartTime(e, day)" class="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-2/6" id="@($"start-{day}")">
+
+                    <input type="time" value="@availability[day].EndTime?.ToString("hh\\:mm")" @onchange="(e) => UpdateEndTime(e, day)" class="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-2/6" id="@($"end-{day}")">
+                </div>
+            }
+            <div class="flex items-center justify-center">
+                <button class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit" @onclick="SubmitAvailability">
+                   
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int EmployeeId { get; set; }
+    private Dictionary<DayOfWeek, (TimeSpan? StartTime, TimeSpan? EndTime)> availability = new();
+    private void UpdateAvailability(DayOfWeek day, TimeSpan? startTime, TimeSpan? endTime)
+    {
+        availability[day] = (startTime, endTime);
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize availability dictionary with null values
+        foreach (var day in Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>())
+        {
+            availability[day] = (null, null);
+        }
+
+        var currentAvailability = await dbManager.GetAvailabilityAsync(EmployeeId);
+        foreach (var entry in currentAvailability)
+        {
+            availability[entry.DayOfWeek] = (entry.StartTime, entry.EndTime);
+        }
+    }
+
+    private void UpdateStartTime(ChangeEventArgs e, DayOfWeek day)
+    {
+        if (TimeSpan.TryParse(e.Value.ToString(), out var startTime))
+        {
+            var endTime = availability[day].EndTime;
+            UpdateAvailability(day, startTime, endTime);
+        }
+    }
+
+    private void UpdateEndTime(ChangeEventArgs e, DayOfWeek day)
+    {
+        if (TimeSpan.TryParse(e.Value.ToString(), out var endTime))
+        {
+            var startTime = availability[day].StartTime;
+            UpdateAvailability(day, startTime, endTime);
+        }
+    }
+
+    async Task SubmitAvailability()
+    {
+        var availabilities = availability.Select(kv => new AvailabilityModel
+            {
+                EmployeeId = EmployeeId,
+                DayOfWeek = kv.Key,
+                StartTime = kv.Value.StartTime,
+                EndTime = kv.Value.EndTime
+            }).ToList();
+
+        var success = await dbManager.UpdateAvailabilityAsync(EmployeeId, availabilities);
+        if (success)
+        {
+            // Handle success, such as navigating back or displaying a message
+            nav.NavigateTo("/employee-management");
+        }
+        else
+        {
+            // Handle error
+        }
+    }
+}

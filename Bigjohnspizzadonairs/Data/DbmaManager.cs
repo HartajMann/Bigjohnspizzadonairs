@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Bigjohnspizzadonairs.Data
 {
@@ -252,6 +253,169 @@ namespace Bigjohnspizzadonairs.Data
                 return storedPassword == oldPassword;
             }
         }
+        public async Task<List<AvailabilityModel>> GetAvailabilityAsync(int employeeId)
+        {
+            var availabilities = new List<AvailabilityModel>();
+
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+                // Adjust the query to join with the Employees table to fetch the Name
+                var command = new SqlCommand(@"
+            SELECT ea.*, e.Name 
+            FROM EmployeeAvailability ea 
+            INNER JOIN Employees e ON ea.EmployeeId = e.EmployeeId 
+            WHERE ea.EmployeeId = @EmployeeId", sqlConnection);
+                command.Parameters.AddWithValue("@EmployeeId", employeeId);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        availabilities.Add(new AvailabilityModel
+                        {
+                            Id = (int)reader["Id"],
+                            EmployeeId = (int)reader["EmployeeId"],
+                            Name = reader["Name"].ToString(), // Get the Name from the reader
+                            DayOfWeek = (DayOfWeek)reader["DayOfWeek"],
+                            StartTime = reader["StartTime"] as TimeSpan?,
+                            EndTime = reader["EndTime"] as TimeSpan?
+                        });
+                    }
+                }
+            }
+            return availabilities;
+        }
+
+
+        // Method to update the availability of an employee
+        public async Task<bool> UpdateAvailabilityAsync(int employeeId, List<AvailabilityModel> availabilities)
+        {
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+                using (var transaction = sqlConnection.BeginTransaction())
+                {
+                    try
+                    {
+                        var deleteCommandText = "DELETE FROM EmployeeAvailability WHERE EmployeeId = @EmployeeId";
+                        var deleteCommand = new SqlCommand(deleteCommandText, sqlConnection, transaction);
+                        deleteCommand.Parameters.AddWithValue("@EmployeeId", employeeId);
+                        await deleteCommand.ExecuteNonQueryAsync();
+
+                        var insertCommandText = @"
+                    INSERT INTO EmployeeAvailability (EmployeeId, DayOfWeek, StartTime, EndTime)
+                    VALUES (@EmployeeId, @DayOfWeek, @StartTime, @EndTime);
+                ";
+
+                        foreach (var availability in availabilities)
+                        {
+                            var insertCommand = new SqlCommand(insertCommandText, sqlConnection, transaction);
+                            insertCommand.Parameters.AddWithValue("@EmployeeId", employeeId);
+                            insertCommand.Parameters.AddWithValue("@DayOfWeek", (int)availability.DayOfWeek);
+                            insertCommand.Parameters.AddWithValue("@StartTime", (object)availability.StartTime ?? DBNull.Value);
+                            insertCommand.Parameters.AddWithValue("@EndTime", (object)availability.EndTime ?? DBNull.Value);
+                            await insertCommand.ExecuteNonQueryAsync();
+                        }
+
+                        transaction.Commit();
+                        return true;
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        return false;
+                    }
+                }
+            }
+        }
+        public async Task<List<AvailabilityModel>> GetAvailableEmployeesAsync(DateTime scheduleDate)
+        {
+            var dayOfWeek = scheduleDate.DayOfWeek;
+            var availableEmployees = new List<AvailabilityModel>();
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                try
+                {
+                    await sqlConnection.OpenAsync();
+                    var commandText = "SELECT ea.EmployeeId, ea.DayOfWeek, ea.StartTime, ea.EndTime, e.Name " +
+                                      "FROM EmployeeAvailability ea " +
+                                      "INNER JOIN Employees e ON ea.EmployeeId = e.EmployeeId " +
+                                      "WHERE ea.DayOfWeek = @DayOfWeek";
+                    var command = new SqlCommand(commandText, sqlConnection);
+                    command.Parameters.AddWithValue("@DayOfWeek", (int)dayOfWeek);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var availability = new AvailabilityModel
+                            {
+                                EmployeeId = (int)reader["EmployeeId"],
+                                DayOfWeek = (DayOfWeek)reader["DayOfWeek"],
+                                StartTime = reader["StartTime"] as TimeSpan?,
+                                EndTime = reader["EndTime"] as TimeSpan?,
+                                Name = reader["Name"].ToString()
+                            };
+                            availableEmployees.Add(availability);
+                            Debug.WriteLine($"Fetched availability for employee {availability.Name} ({availability.EmployeeId}) on day {availability.DayOfWeek}");
+                        }
+                    }
+
+                    if (!availableEmployees.Any())
+                    {
+                        // Add logging here if no employees are fetched
+                        Debug.WriteLine("No available employees were fetched for the given day of the week.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Add logging here to catch any exceptions
+                    Debug.WriteLine($"An error occurred while fetching available employees: {ex.Message}");
+                }
+            }
+            return availableEmployees;
+        }
+
+        public async Task<bool> SaveScheduleAsync(List<ScheduleModel> schedules)
+        {
+            using (var sqlConnection = new SqlConnection(connString))
+            {
+                await sqlConnection.OpenAsync();
+                using (var transaction = sqlConnection.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var schedule in schedules)
+                        {
+                            var commandText = @"
+                        INSERT INTO EmployeeShifts (EmployeeId, ShiftDate, StartTime, EndTime)
+                        VALUES (@EmployeeId, @ShiftDate, @StartTime, @EndTime);
+                    ";
+                            var command = new SqlCommand(commandText, sqlConnection, transaction);
+                            command.Parameters.AddWithValue("@EmployeeId", schedule.EmployeeId);
+                            command.Parameters.AddWithValue("@ShiftDate", schedule.ScheduleDate);
+                            command.Parameters.AddWithValue("@StartTime", schedule.StartTime.TimeOfDay);
+                            command.Parameters.AddWithValue("@EndTime", schedule.EndTime.TimeOfDay);
+
+                            await command.ExecuteNonQueryAsync();
+                        }
+                        transaction.Commit();
+                        return true;
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        return false;
+                    }
+                }
+            }
+        }
+
+
+
+
+
 
     }
 }

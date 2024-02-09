@@ -31,7 +31,7 @@
                         <td class="px-4 py-3 text-sm">@employee.ContactNumber</td>
                         <td class="px-4 py-3 text-sm">@employee.Position</td>
                         <td class="px-4 py-3 text-sm">
-                            <button class="text-blue-600 hover:underline">Change</button>
+                            <button class="text-blue-600 hover:underline" @onclick="()=>NavigateToAvailability(employee.EmployeeId)">Change</button>
                         </td>
                         <td class="px-4 py-3 text-sm">
                             <button class="text-blue-600 hover:underline mr-2" @onclick="() => NavigateToEditEmployee(employee.EmployeeId)">Edit</button>
@@ -44,22 +44,29 @@
     </div>
 </div>
 
-    @code {
-        private List<EmployeeModel> employees = new List<EmployeeModel>();
+@code {
+    private List<EmployeeModel> employees = new List<EmployeeModel>();
 
-        protected override async Task OnInitializedAsync()
-        {
-            employees = await dbManager.GetAllEmployeesAsync();
-        }
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await dbManager.GetAllEmployeesAsync();
+    }
 
-        private void NavigateToAddEmployee()
-        {
-            nav.NavigateTo("/add-employee");
-        }
+    private void NavigateToAddEmployee()
+    {
+        nav.NavigateTo("/add-employee");
+    }
     private void NavigateToEditEmployee(int employeeId)
     {
         Console.WriteLine($"Attempting to navigate to edit employee with ID: {employeeId}");
         nav.NavigateTo($"/edit-employee/{employeeId}");
+    }
+
+
+    private void NavigateToAvailability(int employeeId)
+    {
+        nav.NavigateTo($"/availability/{employeeId}");
+
     }
 
 
@@ -68,7 +75,7 @@
             var result = await dbManager.DeleteEmployeeAsync(employeeId);
             if (result)
             {
-                employees = await dbManager.GetAllEmployeesAsync(); // Refresh the list
+                employees = await dbManager.GetAllEmployeesAsync(); 
             }
             else
             {

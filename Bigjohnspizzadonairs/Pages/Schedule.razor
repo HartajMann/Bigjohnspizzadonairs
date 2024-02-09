@@ -1,0 +1,208 @@
+﻿@page "/schedule"
+@inject DbmaManager dbManager
+@using Bigjohnspizzadonairs.Data
+@using System.Diagnostics;
+<div class="container mx-auto p-6">
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="mb-4 border-b pb-4">
+            <h1 class="text-2xl font-semibold text-gray-800">Manual Employee Scheduling</h1>
+            <div class="mt-2">
+                <label for="schedule-date" class="block text-sm font-medium text-gray-700">Select Date</label>
+                <input type="date" id="schedule-date" value="@selectedDate?.ToString("yyyy-MM-dd")" @onchange="OnDateSelected" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+
+            </div>
+        </div>
+
+        <div class="flex flex-col">
+            <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                    <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Employee
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Start Time
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        End Time
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach (var employee in availableEmployees)
+                                {
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">@employee.Name</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="time" value="@employeeShifts[employee.EmployeeId].StartTime?.ToString("hh\\:mm")" @onchange="@(e => UpdateEmployeeShift(employee.EmployeeId, e.Value.ToString(), true))">
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="time" value="@employeeShifts[employee.EmployeeId].EndTime?.ToString("hh\\:mm")" @onchange="@(e => UpdateEmployeeShift(employee.EmployeeId, e.Value.ToString(), false))">
+                                        </td>
+                                    </tr>
+                                }
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 flex justify-end">
+            <button @onclick="SaveSchedule"  class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#8C8C73] hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8C8C73]">
+                Save Schedule
+            </button>
+        </div>
+    </div>
+
+    <div>
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="text-red-600">
+                <p>Error: @errorMessage</p>
+            </div>
+        }
+    </div>
+	
+</div>
+
+@code {
+    private DateTime? selectedDate;
+    private List<AvailabilityModel> availableEmployees = new();
+    private string errorMessage;
+    private Dictionary<int, (TimeSpan? StartTime, TimeSpan? EndTime)> employeeShifts = new();
+
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Debug.WriteLine("razor");
+
+        try
+        {
+            if (selectedDate.HasValue)
+            {
+                Debug.WriteLine("Schedule.razor");
+                availableEmployees = await dbManager.GetAvailableEmployeesAsync(selectedDate.Value);
+                if (!availableEmployees.Any())
+                {
+                    errorMessage = "No employees are available for the selected date.";
+                }
+                else
+                {
+                    // Initialize employeeShifts for each available employee
+                    employeeShifts.Clear(); // Clear existing entries to handle date changes
+                    foreach (var employee in availableEmployees)
+                    {
+                        // Initialize with the employee's existing availability as default values
+                        employeeShifts[employee.EmployeeId] = (employee.StartTime, employee.EndTime);
+                    }
+                }
+            }
+            else
+            {
+                Debug.WriteLine("razor1");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error fetching available employees: {ex.Message}";
+        }
+    }
+    private void UpdateEmployeeShift(int employeeId, string time, bool isStartTime)
+    {
+        if (DateTime.TryParse(time, out var dateTime))
+        {
+            var timeSpan = dateTime.TimeOfDay;
+
+            if (employeeShifts.ContainsKey(employeeId))
+            {
+                var (startTime, endTime) = employeeShifts[employeeId];
+                if (isStartTime)
+                {
+                    employeeShifts[employeeId] = (timeSpan, endTime);
+                }
+                else
+                {
+                    employeeShifts[employeeId] = (startTime, timeSpan);
+                }
+            }
+            else
+            {
+                if (isStartTime)
+                {
+                    employeeShifts[employeeId] = (timeSpan, null);
+                }
+                else
+                {
+                    employeeShifts[employeeId] = (null, timeSpan);
+                }
+            }
+        }
+    }
+
+
+    private async Task SaveSchedule()
+    {
+        List<ScheduleModel> schedules = new List<ScheduleModel>();
+        foreach (var kvp in employeeShifts)
+        {
+            if (kvp.Value.StartTime.HasValue && kvp.Value.EndTime.HasValue)
+            {
+                schedules.Add(new ScheduleModel
+                    {
+                        EmployeeId = kvp.Key,
+                        ScheduleDate = selectedDate.Value,
+                        StartTime = selectedDate.Value.Date.Add(kvp.Value.StartTime.Value),
+                        EndTime = selectedDate.Value.Date.Add(kvp.Value.EndTime.Value)
+                    });
+            }
+        }
+
+        bool success = await dbManager.SaveScheduleAsync(schedules);
+        if (success)
+        {
+            // Handle success, e.g., navigate to a success page or show a success message
+        }
+        else
+        {
+            errorMessage = "Failed to save the schedule.";
+        }
+    }
+
+
+    private async Task OnDateSelected(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var newDate))
+        {
+            Debug.WriteLine($"Date selected: {newDate:yyyy-MM-dd}");
+            selectedDate = newDate;
+            errorMessage = String.Empty; // Clear any existing error messages
+
+            // Fetch the available employees for the newly selected date
+            availableEmployees = await dbManager.GetAvailableEmployeesAsync(newDate);
+            if (!availableEmployees.Any())
+            {
+                errorMessage = "No employees are available for the selected date.";
+            }
+            else
+            {
+                // Re-initialize employeeShifts for the new date
+                employeeShifts.Clear();
+                foreach (var employee in availableEmployees)
+                {
+                    // Initialize with the employee's existing availability as default values
+                    employeeShifts[employee.EmployeeId] = (employee.StartTime, employee.EndTime);
+                }
+            }
+
+            // Notify the component that it needs to re-render because the state has changed
+            StateHasChanged();
+        }
+    }
+
+
+}

@@ -1,5 +1,6 @@
 ﻿using Bigjohnspizzadonairs.Data;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace Bigjohnspizzadonairs
 {
@@ -24,7 +25,6 @@ namespace Bigjohnspizzadonairs
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
-
 
             return builder.Build();
         }
