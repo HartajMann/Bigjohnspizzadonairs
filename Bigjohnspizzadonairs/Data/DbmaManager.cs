@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Components;
 
 namespace Bigjohnspizzadonairs.Data
 {
@@ -123,7 +124,7 @@ namespace Bigjohnspizzadonairs.Data
                 command.Parameters.AddWithValue("@Position", employee.Position);
                 command.Parameters.AddWithValue("@ContactNumber", employee.ContactNumber);
                 command.Parameters.AddWithValue("@EmergencyContactNumber", employee.EmergencyContactNumber);
-                command.Parameters.AddWithValue("@Password", employee.Password); 
+                command.Parameters.AddWithValue("@Password", employee.Password);
 
                 int result = await command.ExecuteNonQueryAsync();
 
@@ -412,10 +413,116 @@ namespace Bigjohnspizzadonairs.Data
             }
         }
 
+        public async Task<List<ScheduleDisplayModel>> GetSchedulesForDate(DateTime date)
+        {
+            var schedules = new List<ScheduleDisplayModel>();
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var command = new SqlCommand(@"SELECT es.ShiftId, e.Name AS EmployeeName, es.StartTime, es.EndTime
+                                       FROM EmployeeShifts es
+                                       JOIN Employees e ON es.EmployeeId = e.EmployeeId
+                                       WHERE es.ShiftDate = @Date", connection);
+                command.Parameters.AddWithValue("@Date", date);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var schedule = new ScheduleDisplayModel
+                        {
+                            ScheduleId = reader.GetInt32(reader.GetOrdinal("ShiftId")),
+                            EmployeeName = reader.GetString(reader.GetOrdinal("EmployeeName")),
+                            StartTime = reader.GetTimeSpan(reader.GetOrdinal("StartTime")),
+                            EndTime = reader.GetTimeSpan(reader.GetOrdinal("EndTime")),
+                        };
+                        schedules.Add(schedule);
+                    }
+                }
+            }
+            return schedules;
+        }
 
 
 
+        public async Task<bool> UpdateScheduleAsync(int scheduleId, TimeSpan startTime, TimeSpan endTime)
+        {
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var command = new SqlCommand("UPDATE EmployeeShifts SET StartTime = @StartTime, EndTime = @EndTime WHERE ShiftId = @ShiftId", connection);
+                command.Parameters.AddWithValue("@StartTime", startTime);
+                command.Parameters.AddWithValue("@EndTime", endTime);
+                command.Parameters.AddWithValue("@ShiftId", scheduleId);
 
+                int result = await command.ExecuteNonQueryAsync();
+                return result > 0;
+            }
+        }
 
+        public async Task<bool> DeleteScheduleAsync(int scheduleId)
+        {
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var command = new SqlCommand("DELETE FROM EmployeeShifts WHERE ShiftId = @ShiftId", connection);
+                command.Parameters.AddWithValue("@ShiftId", scheduleId);
+
+                int result = await command.ExecuteNonQueryAsync();
+                return result > 0;
+            }
+        }
+        // Method for fetching the schedule for a specific employee
+
+        public async Task<List<ScheduledEmployeeModel>> GetWeeklyScheduleForEmployee(int employeeId)
+        {
+            var schedules = new List<ScheduledEmployeeModel>();
+            var startDate = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Monday); // This week's Monday
+            var endDate = startDate.AddDays(6); // This week's Sunday
+
+            try
+            {
+                using (var connection = new SqlConnection(connString))
+                {
+                    await connection.OpenAsync();
+                    var query = @"
+                SELECT EmployeeId, ShiftDate, CONVERT(time, StartTime) AS StartTime, CONVERT(time, EndTime) AS EndTime
+                FROM EmployeeShifts
+                WHERE EmployeeId = @EmployeeId AND ShiftDate BETWEEN @StartDate AND @EndDate
+                ORDER BY ShiftDate, StartTime";
+
+                    using (var command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@EmployeeId", employeeId);
+                        command.Parameters.AddWithValue("@StartDate", startDate);
+                        command.Parameters.AddWithValue("@EndDate", endDate);
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                schedules.Add(new ScheduledEmployeeModel
+                                {
+                                    EmployeeId = (int)reader["EmployeeId"],
+                                    ShiftDate = (DateTime)reader["ShiftDate"],
+                                    StartTime = reader["StartTime"] is TimeSpan ? (TimeSpan)reader["StartTime"] : TimeSpan.Zero,
+                                    EndTime = reader["EndTime"] is TimeSpan ? (TimeSpan)reader["EndTime"] : TimeSpan.Zero
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                Debug.WriteLine($"SQL Error: {ex.Message}");
+                // Consider logging the exception and/or rethrowing it after logging
+            }
+
+            return schedules;
+        }
     }
+
+
+
 }

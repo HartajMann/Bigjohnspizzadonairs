@@ -19,6 +19,7 @@
                     <th class="px-4 py-3">Contact No.</th>
                     <th class="px-4 py-3">Position</th>
                     <th class="px-4 py-3">Change Availability</th>
+                    <th class="px-4" py-3">View Schedule</th>
                     <th class="px-4 py-3">Edit Profile</th>
                 </tr>
             </thead>
@@ -32,6 +33,9 @@
                         <td class="px-4 py-3 text-sm">@employee.Position</td>
                         <td class="px-4 py-3 text-sm">
                             <button class="text-blue-600 hover:underline" @onclick="()=>NavigateToAvailability(employee.EmployeeId)">Change</button>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <button class="text-blue-600 hover:underline" @onclick="() => NavigateToEmployeeSchedule(employee.EmployeeId)">View</button>
                         </td>
                         <td class="px-4 py-3 text-sm">
                             <button class="text-blue-600 hover:underline mr-2" @onclick="() => NavigateToEditEmployee(employee.EmployeeId)">Edit</button>
@@ -62,6 +66,10 @@
         nav.NavigateTo($"/edit-employee/{employeeId}");
     }
 
+    private void NavigateToEmployeeSchedule(int employeeId)
+    {
+        nav.NavigateTo($"/employee-schedule/{employeeId}");
+    }
 
     private void NavigateToAvailability(int employeeId)
     {

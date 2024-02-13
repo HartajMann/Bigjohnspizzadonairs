@@ -1,13 +1,12 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager nav
 
-<div class="page">
-
+<div class="page flex h-screen overflow-hidden">
     <div class="sidebar">
         <NavMenu />
     </div>
-    <main class="bg-gray-100">
-        <article class="content px-4">
+    <main class="flex-1 bg-gray-100 overflow-y-auto">
+        <article class="content px-4 py-4">
             @Body
         </article>
     </main>

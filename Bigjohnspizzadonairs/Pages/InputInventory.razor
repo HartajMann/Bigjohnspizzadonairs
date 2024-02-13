@@ -1,0 +1,55 @@
+﻿@page "/add-inventory"
+
+<div class="container mx-auto p-6">
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="mb-6">
+            <h1 class="text-xl font-bold text-gray-900">Add New Inventory Item</h1>
+        </div>
+        <form>
+            <div class="flex flex-wrap -mx-3 mb-6">
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="branch">
+                        Select Branch
+                    </label>
+                    <select id="branch" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        <option>Choose Branch</option>
+                        <!-- Populate options here -->
+                    </select>
+                </div>
+                <div class="w-full md:w-1/2 px-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-name">
+                        Inventory Name
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-name" type="text" placeholder="Enter inventory name">
+                </div>
+            </div>
+            <div class="flex flex-wrap -mx-3 mb-6">
+                <div class="w-full px-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-description">
+                        Inventory Description
+                    </label>
+                    <textarea id="inventory-description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Describe the inventory item"></textarea>
+                </div>
+            </div>
+            <div class="flex flex-wrap -mx-3 mb-6">
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-quantity">
+                        Inventory Quantity
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-quantity" type="number" placeholder="Quantity">
+                </div>
+                <div class="w-full md:w-1/2 px-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-expiry-date">
+                        Inventory Expiry Date
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-expiry-date" type="date">
+                </div>
+            </div>
+            <div class="flex items-center justify-center">
+                <button class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    Create Item
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

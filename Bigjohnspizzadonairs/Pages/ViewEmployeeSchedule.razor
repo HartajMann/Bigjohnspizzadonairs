@@ -1,0 +1,48 @@
+﻿@page "/employee-schedule/{EmployeeId:int}"
+@inject NavigationManager nav
+@inject DbmaManager dbManager
+@using Bigjohnspizzadonairs.Data
+
+
+<div class="container mx-auto p-6">
+    <div class="mb-4">
+        <h1 class="text-xl font-bold">Weekly Schedule</h1>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="table-auto w-full text-left whitespace-no-wrap">
+            <thead>
+                <tr class="text-xs font-semibold tracking-wide text-gray-500 uppercase bg-gray-50">
+                    <th class="px-4 py-3">Date</th>
+                    <th class="px-4 py-3">Start Time</th>
+                    <th class="px-4 py-3">End Time</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y">
+                @foreach (var schedule in weeklySchedule)
+                {
+                    <tr class="text-gray-700">
+                        <td class="px-4 py-3 text-sm">@schedule.ShiftDate.ToString("yyyy-MM-dd")</td>
+                        <td class="px-4 py-3 text-sm">@FormatTime(schedule.StartTime)</td>
+                        <td class="px-4 py-3 text-sm">@FormatTime(schedule.EndTime)</td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+@code {
+    [Parameter]
+    public int EmployeeId { get; set; }
+
+    private List<ScheduledEmployeeModel> weeklySchedule = new List<ScheduledEmployeeModel>();
+    private string FormatTime(TimeSpan time)
+    {
+        return time != TimeSpan.Zero ? time.ToString(@"hh\:mm") : "N/A";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        weeklySchedule = await dbManager.GetWeeklyScheduleForEmployee(EmployeeId);
+    }
+}

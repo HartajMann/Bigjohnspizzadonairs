@@ -1,0 +1,39 @@
+﻿@page "/inventory-list"
+
+<div class="container mx-auto p-6 overflow-hidden">
+    <div class="overflow-y-auto">
+    <div class="mb-4">
+        <h1 class="text-2xl font-bold text-gray-900">List of Inventories</h1>
+    </div>
+    <div class="bg-white shadow-md rounded my-6">
+        <table class="text-left w-full border-collapse">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="py-4 px-6 bg-grey-lightest font-bold uppercase text-sm text-grey-dark border-b border-grey-light">Inventory Code</th>
+                    <th class="py-4 px-6 bg-grey-lightest font-bold uppercase text-sm text-grey-dark border-b border-grey-light">Inventory Name</th>
+                    <th class="py-4 px-6 bg-grey-lightest font-bold uppercase text-sm text-grey-dark border-b border-grey-light">Quantity</th>
+                    <th class="py-4 px-6 bg-grey-lightest font-bold uppercase text-sm text-grey-dark border-b border-grey-light">Inventory Branch Name</th>
+                    <th class="py-4 px-6 bg-grey-lightest font-bold uppercase text-sm text-grey-dark border-b border-grey-light">Expiry Date</th>
+                    <th class="py-4 px-6 bg-grey-lightest font-bold uppercase text-sm text-grey-dark border-b border-grey-light">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < 10; i++)
+                {
+                    <tr class="hover:bg-grey-lighter">
+                        <td class="py-4 px-6 border-b border-grey-light">0112449@(i + 1)</td>
+                        <td class="py-4 px-6 border-b border-grey-light">Milk</td>
+                        <td class="py-4 px-6 border-b border-grey-light">@((20 - i).ToString())pcs</td>
+                        <td class="py-4 px-6 border-b border-grey-light">Diary</td>
+                        <td class="py-4 px-6 border-b border-grey-light">23-01-2024</td>
+                        <td class="py-4 px-6 border-b border-grey-light">
+                            <a href="#" class="text-grey-lighter font-bold py-1 px-3 rounded text-xs bg-green hover:bg-green-dark">Edit</a>
+                            <a href="#" class="text-grey-lighter font-bold py-1 px-3 rounded text-xs bg-red hover:bg-red-dark">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    </div>
+</div>
