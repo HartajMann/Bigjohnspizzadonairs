@@ -1,4 +1,7 @@
 ﻿@page "/inventory-list"
+@using Bigjohnspizzadonairs.Data
+@inject NavigationManager nav
+@inject DbmaManager dbManager
 
 <div class="container mx-auto p-6 overflow-hidden">
     <div class="overflow-y-auto">
@@ -18,18 +21,18 @@
                 </tr>
             </thead>
             <tbody>
-                @for (int i = 0; i < 10; i++)
+                    @foreach (var item in inventoryItems)
                 {
                     <tr class="hover:bg-grey-lighter">
-                        <td class="py-4 px-6 border-b border-grey-light">0112449@(i + 1)</td>
-                        <td class="py-4 px-6 border-b border-grey-light">Milk</td>
-                        <td class="py-4 px-6 border-b border-grey-light">@((20 - i).ToString())pcs</td>
-                        <td class="py-4 px-6 border-b border-grey-light">Diary</td>
-                        <td class="py-4 px-6 border-b border-grey-light">23-01-2024</td>
-                        <td class="py-4 px-6 border-b border-grey-light">
+                            <td class="py-4 px-6 border-b border-grey-light">@item.InventoryId</td>
+                            <td class="py-4 px-6 border-b border-grey-light">@item.Name</td>
+                            <td class="py-4 px-6 border-b border-grey-light">@item.Quantity</td>
+                            <td class="py-4 px-6 border-b border-grey-light">@item.Branch</td>
+                            <td class="py-4 px-6 border-b border-grey-light">@item.ExpiryDate?.ToString("dd-MM-yyyy")</td>
+                            <td class="py-4 px-6 border-b border-grey-light">
                             <a href="#" class="text-grey-lighter font-bold py-1 px-3 rounded text-xs bg-green hover:bg-green-dark">Edit</a>
-                            <a href="#" class="text-grey-lighter font-bold py-1 px-3 rounded text-xs bg-red hover:bg-red-dark">Delete</a>
-                        </td>
+                                <button @onclick="() => DeleteItem(item.InventoryId)" class="text-red-600 hover:underline">Delete</button>
+                            </td>
                     </tr>
                 }
             </tbody>
@@ -37,3 +40,29 @@
     </div>
     </div>
 </div>
+@code {
+    private List<InventoryItemModel> inventoryItems = new List<InventoryItemModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInventoryItems();
+    }
+    private async Task LoadInventoryItems()
+    {
+        inventoryItems = await dbManager.GetInventoryItemsAsync();
+    }
+    private async Task DeleteItem(int inventoryId)
+    {
+        var result = await dbManager.DeleteInventoryItemAsync(inventoryId);
+        if (result)
+        {
+            // Item was deleted successfully, reload the list to reflect the change
+            await LoadInventoryItems();
+        }
+        else
+        {
+            // Handle the error, could not delete the item
+        }
+    }
+    // Implement the Edit and Delete methods here if required
+}

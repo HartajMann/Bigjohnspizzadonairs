@@ -521,8 +521,95 @@ namespace Bigjohnspizzadonairs.Data
 
             return schedules;
         }
+        public async Task<bool> AddInventoryItemAsync(string branch, string Name, string description, int quantity, DateTime? expiryDate)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(connString))
+                {
+                    await connection.OpenAsync();
+                    var query = @"
+                        INSERT INTO InventoryItems (Branch, Name, Description, Quantity, ExpiryDate)
+                        VALUES (@Branch, @Name, @Description, @Quantity, @ExpiryDate)";
+                    using (var command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Branch", branch);
+                        command.Parameters.AddWithValue("@Name", Name);
+                        command.Parameters.AddWithValue("@Description", description);
+                        command.Parameters.AddWithValue("@Quantity", quantity);
+                        command.Parameters.AddWithValue("@ExpiryDate", (object)expiryDate ?? DBNull.Value);
+
+                        var result = await command.ExecuteNonQueryAsync();
+                        return result > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+        public async Task<List<InventoryItemModel>> GetInventoryItemsAsync()
+        {
+            var inventoryItems = new List<InventoryItemModel>();
+
+            try
+            {
+                using (var connection = new SqlConnection(connString))
+                {
+                    await connection.OpenAsync();
+                    var query = "SELECT InventoryId, Branch, Name, Description, Quantity, ExpiryDate FROM InventoryItems";
+                    using (var command = new SqlCommand(query, connection))
+                    {
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                inventoryItems.Add(new InventoryItemModel
+                                {
+                                    InventoryId = (int)reader["InventoryId"],
+                                    Branch = reader["Branch"].ToString(),
+                                    Name = reader["Name"].ToString(),
+                                    Description = reader["Description"].ToString(),
+                                    Quantity = (int)reader["Quantity"],
+                                    ExpiryDate = reader["ExpiryDate"] as DateTime?
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            return inventoryItems;
+        }
+        public async Task<bool> DeleteInventoryItemAsync(int inventoryId)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(connString))
+                {
+                    await connection.OpenAsync();
+                    var query = "DELETE FROM InventoryItems WHERE InventoryId = @InventoryId";
+                    using (var command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@InventoryId", inventoryId);
+                        var result = await command.ExecuteNonQueryAsync();
+                        return result > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log or handle the exception as needed
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+
     }
-
-
-
 }
