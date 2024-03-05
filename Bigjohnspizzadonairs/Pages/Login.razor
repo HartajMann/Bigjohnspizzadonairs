@@ -25,7 +25,7 @@
         </div>
     </div>
 </div>
-@*
+
 @code {
 	string user = "";
 	string pass = "";
@@ -66,8 +66,8 @@
 		}
 	}
 }
-*@
 
+@*
 @code {
 	string user = "";
 	string pass = "";
@@ -100,7 +100,7 @@
 				if (isEmployee)
 				{
 					// Navigate to the employee dashboard or UI
-					nav.NavigateTo("/add-employee");
+					nav.NavigateTo("/index");
 				}
 				else
 				{
@@ -112,9 +112,9 @@
 			{
 				errorMessage = "Username or password is incorrect."; // Set an error message if login fails
 			}
-		}
+	
+			}
 	}
-
-
-
+	
 }
+*@

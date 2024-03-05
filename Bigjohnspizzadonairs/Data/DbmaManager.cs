@@ -800,8 +800,29 @@ WHERE
             return todaysShifts;
         }
 
+		public async Task<bool> ValidateManagerLoginAsync(string userId, string password)
+		{
+			bool isValidLogin = false;
 
+			using (var connection = new SqlConnection(connString))
+			{
+				await connection.OpenAsync();
 
-    }
+				var loginQuery = "SELECT Password FROM Login WHERE UserId = @UserId";
+				using (var loginCommand = new SqlCommand(loginQuery, connection))
+				{
+					loginCommand.Parameters.AddWithValue("@UserId", userId);
+					var result = await loginCommand.ExecuteScalarAsync();
+					if (result != null && result != DBNull.Value && (string)result == password)
+					{
+						isValidLogin = true;
+					}
+				}
+			}
+
+			return (isValidLogin);
+		}
+
+	}
 
 }
