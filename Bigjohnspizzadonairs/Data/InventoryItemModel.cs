@@ -17,5 +17,7 @@ namespace Bigjohnspizzadonairs.Data
         public DateTime? ExpiryDate { get; set; }
         public DateTime Timestamp { get; set; }
 
+        public int Alert { get; set;}
+
     }
 }

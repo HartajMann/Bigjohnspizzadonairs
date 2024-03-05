@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Components;
+using System.Data;
 
 namespace Bigjohnspizzadonairs.Data
 {
@@ -10,30 +11,75 @@ namespace Bigjohnspizzadonairs.Data
     {
         string connString;
 
+
         // Constructor to initialize the connection string
         public DbmaManager()
         {
             connString = @"Data Source=HARRY-PC\SQLEXPRESS;Initial Catalog=Bigjohnspizzadonairs;Integrated Security=True;Encrypt=False;TrustServerCertificate=True";
         }
 
-        public async Task<bool> ValidateLoginAsync(string userId, string password)
+
+        public async Task<(bool IsValidLogin, bool IsEmployee, bool IsManager)> ValidateLoginAsync(string userId, string password)
         {
+            bool isValidLogin = false;
+            bool isEmployee = false;
+            bool isManager = false;
+
             using (var connection = new SqlConnection(connString))
             {
                 await connection.OpenAsync();
-                var query = "SELECT Password FROM Login WHERE UserId = @UserId";
-                using (var command = new SqlCommand(query, connection))
+
+                // First, check in the Login table (assuming managers are stored here)
+                var loginQuery = "SELECT Password FROM Login WHERE UserId = @UserId";
+                using (var loginCommand = new SqlCommand(loginQuery, connection))
                 {
-                    command.Parameters.AddWithValue("@UserId", userId);
-                    var result = await command.ExecuteScalarAsync();
-                    if (result != null && result != DBNull.Value)
+                    loginCommand.Parameters.AddWithValue("@UserId", userId);
+                    var result = await loginCommand.ExecuteScalarAsync();
+                    if (result != null && result != DBNull.Value && (string)result == password)
                     {
-                        string storedPassword = (string)result;
-                        return storedPassword == password;
+                        isValidLogin = true;
+                        isManager = true; // Validated as a manager
+                    }
+                }
+
+                // If not found in Login, check in the Employees table
+                if (!isValidLogin)
+                {
+                    var employeeQuery = "SELECT Password FROM Employees WHERE Name = @Name";
+                    using (var employeeCommand = new SqlCommand(employeeQuery, connection))
+                    {
+                        employeeCommand.Parameters.AddWithValue("@Name", userId);
+                        var result = await employeeCommand.ExecuteScalarAsync();
+                        if (result != null && result != DBNull.Value && (string)result == password)
+                        {
+                            isValidLogin = true;
+                            isEmployee = true; // Validated as an employee
+                        }
                     }
                 }
             }
-            return false;
+
+            return (isValidLogin, isEmployee, isManager);
+        }
+        public async Task<string> GetUserRoleAsync(string Name)
+        {
+            string role = "Employee"; // Default role
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var roleQuery = "SELECT Position FROM Employees WHERE Name = @Name";
+                using (var roleCommand = new SqlCommand(roleQuery, connection))
+                {
+                    roleCommand.Parameters.Add(new SqlParameter("@Name", SqlDbType.VarChar)).Value = Name; // More explicit parameter declaration
+                    var result = await roleCommand.ExecuteScalarAsync();
+                    if (result != null && result != DBNull.Value)
+                    {
+                        role = result.ToString();
+                    }
+                }
+            }
+            Debug.WriteLine($"Role for employee {Name} is {role}");
+            return role;
         }
 
         public async Task<bool> PunchInAsync(string userId)
@@ -521,7 +567,7 @@ namespace Bigjohnspizzadonairs.Data
 
             return schedules;
         }
-        public async Task<bool> AddInventoryItemAsync(string branch, string Name, string description, int quantity, DateTime? expiryDate)
+        public async Task<bool> AddInventoryItemAsync(string branch, string Name, string description, int quantity, int alertQuantity, DateTime? expiryDate)
         {
             try
             {
@@ -529,14 +575,15 @@ namespace Bigjohnspizzadonairs.Data
                 {
                     await connection.OpenAsync();
                     var query = @"
-                        INSERT INTO InventoryItems (Branch, Name, Description, Quantity, ExpiryDate)
-                        VALUES (@Branch, @Name, @Description, @Quantity, @ExpiryDate)";
+                INSERT INTO InventoryItems (Branch, Name, Description, Quantity, AlertQuantity, ExpiryDate)
+                VALUES (@Branch, @Name, @Description, @Quantity, @AlertQuantity, @ExpiryDate)";
                     using (var command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@Branch", branch);
                         command.Parameters.AddWithValue("@Name", Name);
                         command.Parameters.AddWithValue("@Description", description);
                         command.Parameters.AddWithValue("@Quantity", quantity);
+                        command.Parameters.AddWithValue("@AlertQuantity", alertQuantity);
                         command.Parameters.AddWithValue("@ExpiryDate", (object)expiryDate ?? DBNull.Value);
 
                         var result = await command.ExecuteNonQueryAsync();
@@ -550,6 +597,7 @@ namespace Bigjohnspizzadonairs.Data
                 return false;
             }
         }
+
         public async Task<List<InventoryItemModel>> GetInventoryItemsAsync()
         {
             var inventoryItems = new List<InventoryItemModel>();
@@ -605,11 +653,155 @@ namespace Bigjohnspizzadonairs.Data
             }
             catch (Exception ex)
             {
-                // Log or handle the exception as needed
                 Console.WriteLine(ex.Message);
                 return false;
             }
         }
+        public async Task<InventoryItemModel> GetInventoryItemAsync(int inventoryId)
+        {
+            InventoryItemModel item = null;
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var query = "SELECT * FROM InventoryItems WHERE InventoryId = @InventoryId";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@InventoryId", inventoryId);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            item = new InventoryItemModel
+                            {
+                                InventoryId = (int)reader["InventoryId"],
+                                Branch = reader["Branch"].ToString(),
+                                Name = reader["Name"].ToString(),
+                                Description = reader["Description"].ToString(),
+                                Quantity = (int)reader["Quantity"],
+                                ExpiryDate = reader["ExpiryDate"] as DateTime?
+                            };
+                        }
+                    }
+                }
+            }
+            return item;
+        }
+
+        public async Task<bool> UpdateInventoryItemAsync(InventoryItemModel item)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(connString))
+                {
+                    await connection.OpenAsync();
+                    var query = @"
+                UPDATE InventoryItems 
+                SET Branch = @Branch, 
+                    Name = @Name, 
+                    Description = @Description, 
+                    Quantity = @Quantity, 
+                    ExpiryDate = @ExpiryDate 
+                WHERE InventoryId = @InventoryId";
+                    using (var command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@InventoryId", item.InventoryId);
+                        command.Parameters.AddWithValue("@Branch", item.Branch);
+                        command.Parameters.AddWithValue("@Name", item.Name);
+                        command.Parameters.AddWithValue("@Description", item.Description ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@Quantity", item.Quantity);
+                        command.Parameters.AddWithValue("@ExpiryDate", item.ExpiryDate ?? (object)DBNull.Value);
+                        var result = await command.ExecuteNonQueryAsync();
+                        return result > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+        public List<InventoryItemModel> GetInventoryAlerts()
+        {
+            var alerts = new List<InventoryItemModel>();
+
+            using (var connection = new SqlConnection(connString))
+            {
+                connection.Open();
+
+                var command = new SqlCommand(@"
+SELECT * FROM [InventoryItems] 
+WHERE 
+    Quantity <= AlertQuantity OR 
+    (ExpiryDate IS NOT NULL AND ExpiryDate <= @expiryThreshold)", connection);
+
+                command.Parameters.AddWithValue("@expiryThreshold", DateTime.Now.AddDays(7));
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var item = new InventoryItemModel
+                        {
+                            InventoryId = (int)reader["InventoryId"],
+                            Branch = reader["Branch"].ToString(),
+                            Name = reader["Name"].ToString(),
+                            Description = reader["Description"].ToString(),
+                            Quantity = (int)reader["Quantity"],
+                            ExpiryDate = reader["ExpiryDate"] as DateTime?,
+                            Timestamp = (DateTime)reader["Timestamp"],
+                            Alert = (int)reader["AlertQuantity"] // Ensure this matches the column name in your table
+                        };
+                        alerts.Add(item);
+                    }
+                }
+            }
+
+            return alerts;
+        }
+        public async Task<List<ShiftDetail>> GetTodaysShiftsAsync()
+        {
+            var todaysShifts = new List<ShiftDetail>();
+            var currentDate = DateTime.Now.Date;
+
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+
+                var shiftQuery = @"
+        SELECT es.ShiftId, es.EmployeeId, es.ShiftDate, es.StartTime, es.EndTime, e.Name
+        FROM EmployeeShifts es
+        INNER JOIN Employees e ON es.EmployeeId = e.EmployeeId
+        WHERE es.ShiftDate = @ShiftDate";
+
+                using (var command = new SqlCommand(shiftQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@ShiftDate", currentDate);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var shift = new ShiftDetail
+                            {
+                                ShiftId = reader.GetInt32(reader.GetOrdinal("ShiftId")),
+                                EmployeeId = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                                ShiftDate = reader.GetDateTime(reader.GetOrdinal("ShiftDate")),
+                                StartTime = reader.GetTimeSpan(reader.GetOrdinal("StartTime")),
+                                EndTime = reader.GetTimeSpan(reader.GetOrdinal("EndTime")),
+                                EmployeeName = reader.GetString(reader.GetOrdinal("Name"))
+                            };
+                            todaysShifts.Add(shift);
+                        }
+                    }
+                }
+            }
+
+            return todaysShifts;
+        }
+
+
 
     }
+
 }

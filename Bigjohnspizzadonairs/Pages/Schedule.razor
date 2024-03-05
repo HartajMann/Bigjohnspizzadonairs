@@ -29,6 +29,9 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         End Time
                                     </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Schedule Employee
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -41,6 +44,9 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <input type="time" value="@employeeShifts[employee.EmployeeId].EndTime?.ToString("hh\\:mm")" @onchange="@(e => UpdateEmployeeShift(employee.EmployeeId, e.Value.ToString(), false))">
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="checkbox" @bind="@employee.IsScheduled">
                                         </td>
                                     </tr>
                                 }
@@ -150,7 +156,8 @@
         List<ScheduleModel> schedules = new List<ScheduleModel>();
         foreach (var kvp in employeeShifts)
         {
-            if (kvp.Value.StartTime.HasValue && kvp.Value.EndTime.HasValue)
+            var employee = availableEmployees.First(e => e.EmployeeId == kvp.Key);
+            if (employee.IsScheduled && kvp.Value.StartTime.HasValue && kvp.Value.EndTime.HasValue)
             {
                 schedules.Add(new ScheduleModel
                     {

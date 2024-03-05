@@ -3,6 +3,7 @@
 @inject NavigationManager nav
 @inject DbmaManager dbManager
 @using Bigjohnspizzadonairs.Data
+@using System.Diagnostics;
 
 
 
@@ -24,7 +25,7 @@
         </div>
     </div>
 </div>
-
+@*
 @code {
 	string user = "";
 	string pass = "";
@@ -65,11 +66,13 @@
 		}
 	}
 }
-@*
+*@
+
 @code {
 	string user = "";
 	string pass = "";
-    string errorMessage = "";
+	string errorMessage = "";
+
 	// These are methods that are called when the username or password input is changed
 	private void username(ChangeEventArgs e)
 	{
@@ -79,28 +82,39 @@
 	{
 		pass = e.Value.ToString();
 	}
-	// This is the method that is called when the login button is clicked
-    async Task Home()
-    {
-        errorMessage = ""; // Clear the error message each time the method is called
-        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(pass))
-        {
-            errorMessage = "Please complete all fields."; // Set an error message instead of throwing an exception
-        }
-        else
-        {
-            var isValidLogin = await dbManager.ValidateLoginAsync(user, pass);
-            if (isValidLogin)
-            {
-                nav.NavigateTo("/index");
-            }
-            else
-            {
-                errorMessage = "Username or password is incorrect."; // Set an error message if login fails
-            }
-        }
-    }
-	*@
+
+	async Task Home()
+	{
+		errorMessage = ""; // Clear the error message each time the method is called
+		if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(pass))
+		{
+			errorMessage = "Please complete all fields."; // Set an error message instead of throwing an exception
+		}
+		else
+		{
+			
+			var role = await dbManager.GetUserRoleAsync(user);
+			var (isValidLogin, isEmployee, isManager) = await dbManager.ValidateLoginAsync(user, pass);
+			if (isValidLogin)
+			{
+				if (isEmployee)
+				{
+					// Navigate to the employee dashboard or UI
+					nav.NavigateTo("/add-employee");
+				}
+				else
+				{
+					// Navigate to the regular user home page
+					nav.NavigateTo("/index");
+				}
+			}
+			else
+			{
+				errorMessage = "Username or password is incorrect."; // Set an error message if login fails
+			}
+		}
+	}
+
 
 
 }

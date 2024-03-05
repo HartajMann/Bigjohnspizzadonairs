@@ -19,6 +19,7 @@ namespace Bigjohnspizzadonairs
 				});
 
             builder.Services.AddTransient<DbmaManager>();
+
             builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG

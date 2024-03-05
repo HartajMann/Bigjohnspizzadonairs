@@ -1,21 +1,20 @@
-﻿@page "/add-inventory"
-@using Bigjohnspizzadonairs.Data
+﻿@page "/edit-inventory/{inventoryId:int}"
 @inject NavigationManager nav
 @inject DbmaManager dbManager
-
+@using Bigjohnspizzadonairs.Data
 
 <div class="container mx-auto p-6">
     <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <div class="mb-6">
-            <h1 class="text-xl font-bold text-gray-900">Add New Inventory Item</h1>
+            <h1 class="text-xl font-bold text-gray-900">Edit Employee Details</h1>
         </div>
-         <form>
+        <form>
             <div class="flex flex-wrap -mx-3 mb-6">
                 <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="branch">
                         Select Branch
                     </label>
-                    <select id="branch" @bind="newInventoryItem.Branch"  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    <select id="branch" @bind="inventoryItem.Branch" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                         <option value="">Choose Branch</option>
                         <option value="Dough Ingredients">Dough Ingredients</option>
                         <option value="Sauce Ingredients">Sauce Ingredients</option>
@@ -33,7 +32,7 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-name">
                         Inventory Name
                     </label>
-                    <input @bind="newInventoryItem.Name"  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-name" type="text" placeholder="Enter inventory name">
+                    <input @bind="inventoryItem.Name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-name" type="text" placeholder="Enter inventory name">
                 </div>
             </div>
             <div class="flex flex-wrap -mx-3 mb-6">
@@ -41,58 +40,53 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-description">
                         Inventory Description
                     </label>
-                    <textarea @bind="newInventoryItem.Description"  id="inventory-description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Describe the inventory item"></textarea>
+                    <textarea @bind="inventoryItem.Description" id="inventory-description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Describe the inventory item"></textarea>
                 </div>
             </div>
             <div class="flex flex-wrap -mx-3 mb-6">
-                <div class="w-full md:w-1/3 px-3 mb-6 md:mb-0">
+                <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-quantity">
                         Inventory Quantity
                     </label>
-                    <input @bind="newInventoryItem.Quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-quantity" type="number" placeholder="Quantity">
+                    <input @bind="inventoryItem.Quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-quantity" type="number" placeholder="Quantity">
                 </div>
-                <div class="w-full md:w-1/3 px-3 mb-6 md:mb-0">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-Alert">
-                        Alert Quantity
-                    </label>
-                    <input @bind="newInventoryItem.Alert" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-Alert" type="number" placeholder="Alert Quantity">
-                </div>
-                <div class="w-full md:w-1/3 px-3">
+                <div class="w-full md:w-1/2 px-3">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory-expiry-date">
                         Inventory Expiry Date
                     </label>
-                    <input @bind="newInventoryItem.ExpiryDate" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-expiry-date" type="date">
+                    <input @bind="inventoryItem.ExpiryDate" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="inventory-expiry-date" type="date">
                 </div>
             </div>
             <div class="flex items-center justify-center">
                 <button @onclick="HandleSubmit" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
-                    Create Item
+                    Edit Item
                 </button>
             </div>
         </form>
     </div>
 </div>
-@code{
-    private InventoryItemModel newInventoryItem = new InventoryItemModel();
-    private string errorMessage;
+@code {
+    [Parameter]
+    public int InventoryId { get; set; }
+
+    private InventoryItemModel inventoryItem = new InventoryItemModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        inventoryItem = await dbManager.GetInventoryItemAsync(InventoryId);
+    }
 
     private async Task HandleSubmit()
     {
-        bool result = await dbManager.AddInventoryItemAsync(
-         newInventoryItem.Branch,
-         newInventoryItem.Name,
-         newInventoryItem.Description,
-         newInventoryItem.Quantity,
-         newInventoryItem.Alert,
-         newInventoryItem.ExpiryDate);
+        bool result = await dbManager.UpdateInventoryItemAsync(inventoryItem);
         if (result)
         {
-            errorMessage = "Inventory item added successfully!";
-            newInventoryItem = new InventoryItemModel(); 
+            // Handle successful update
+            nav.NavigateTo("/inventory-list");
         }
         else
         {
-            errorMessage = "There was an error adding the inventory item. Please try again.";
+            // Handle the error, update failed
         }
     }
 }
