@@ -10,11 +10,14 @@ namespace Bigjohnspizzadonairs.Data
     {
         public int ShiftId { get; set; }
         public int EmployeeId { get; set; }
+        public string UserId { get; set; }
 
         public string EmployeeName { get; set; }
         public DateTime ShiftDate { get; set; }
         public TimeSpan StartTime { get; set; }
         public TimeSpan EndTime { get; set; }
+
+        public int TotalMinutesWorked { get; set; }
 
         public DateTime StartDateTime => ShiftDate.Add(StartTime);
         public DateTime EndDateTime => ShiftDate.Add(EndTime);

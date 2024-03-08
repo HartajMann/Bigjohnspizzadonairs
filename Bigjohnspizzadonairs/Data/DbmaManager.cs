@@ -823,6 +823,79 @@ WHERE
 			return (isValidLogin);
 		}
 
-	}
+        public async Task<List<EmployeeShiftSummary>> GetShiftSummariesByMonthAsync(int year, int month)
+        {
+            var summaries = new List<EmployeeShiftSummary>();
+
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var query = @"
+        SELECT e.Name, tt.UserId, SUM(tt.MinutesWorked) AS TotalMinutesWorked
+        FROM TimeTracking tt
+        JOIN Employees e ON tt.UserId = e.EmployeeId
+        WHERE YEAR(tt.PunchIn) = @Year AND MONTH(tt.PunchIn) = @Month
+        GROUP BY tt.UserId, e.Name";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Year", year);
+                    command.Parameters.AddWithValue("@Month", month);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            summaries.Add(new EmployeeShiftSummary
+                            {
+                                Name = reader.GetString(0), // Adjusted index for Name
+                                UserId = reader.GetString(1),
+                                TotalMinutesWorked = reader.GetInt32(2) // Adjusted index for TotalMinutesWorked
+                            });
+                        }
+                    }
+                }
+            }
+
+            return summaries;
+        }
+        public async Task<List<ShiftDetail>> GetShiftDetailsForEmployee(string userId)
+        {
+            var shiftDetails = new List<ShiftDetail>();
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var query = @"
+            SELECT t.TrackingId, t.UserId, e.Name, t.PunchIn, t.PunchOut, t.MinutesWorked
+            FROM TimeTracking t
+            JOIN Employees e ON t.UserId = e.EmployeeId
+            WHERE t.UserId = @UserId";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@UserId", userId);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var punchIn = (DateTime)reader["PunchIn"];
+                            var punchOut = (DateTime)reader["PunchOut"];
+                            shiftDetails.Add(new ShiftDetail
+                            {
+                                ShiftId = (int)reader["TrackingId"],
+                                UserId = reader["UserId"].ToString(),
+                                EmployeeName = reader["Name"].ToString(),
+                                ShiftDate = punchIn.Date,
+                                StartTime = punchIn.TimeOfDay,
+                                EndTime = punchOut.TimeOfDay,
+                                TotalMinutesWorked = (int)reader["MinutesWorked"]
+                            });
+                        }
+                    }
+                }
+            }
+            return shiftDetails;
+        }
+
+    }
 
 }

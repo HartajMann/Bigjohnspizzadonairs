@@ -1,0 +1,69 @@
+﻿@page "/shift-details/{UserId}"
+@using Bigjohnspizzadonairs.Data
+@inject NavigationManager nav
+@inject DbmaManager dbManager
+<div class="container mx-auto p-6">
+<h1 class="text-3xl font-semibold text-gray-800 mb-4">Shift Details for Employee</h1>
+
+@if (employeeShifts != null && employeeShifts.Any())
+{
+    <div>
+        <h2 class="text-xl font-semibold">Employee Name: @employeeShifts.First().EmployeeName</h2>
+        <h3 class="text-lg">Total Hours Worked: @totalHoursFormatted</h3>
+    </div>
+
+    <div class="overflow-x-auto mt-4">
+        <table class="min-w-full bg-white divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Punch In</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Punch Out</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours Worked</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edit</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @foreach (var shift in employeeShifts)
+                {
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">@shift.ShiftDate.ToShortDateString()</td>
+                        <td class="px-6 py-4 whitespace-nowrap">@shift.StartDateTime.ToString("hh\\:mm tt")</td>
+                        <td class="px-6 py-4 whitespace-nowrap">@shift.EndDateTime.ToString("hh\\:mm tt")</td>
+
+                        <td class="px-6 py-4 whitespace-nowrap">@Math.Round(shift.TotalMinutesWorked / 60.0, 2)</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button @onclick="() => EditShift(shift.ShiftId)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded">Edit</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p>No shifts found for this employee.</p>
+}
+</div>
+
+@code {
+    [Parameter]
+    public string UserId { get; set; }
+    private List<ShiftDetail> employeeShifts;
+    private double totalHoursWorked => employeeShifts?.Sum(shift => shift.TotalMinutesWorked) / 60.0 ?? 0;
+    private string totalHoursFormatted => $"{Math.Floor(totalHoursWorked)}:{(totalHoursWorked - Math.Floor(totalHoursWorked)) * 60:00}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(UserId))
+        {
+            employeeShifts = await dbManager.GetShiftDetailsForEmployee(UserId);
+        }
+    }
+
+    private void EditShift(int shiftId)
+    {
+        nav.NavigateTo($"/edit-shift/{shiftId}");
+    }
+}
