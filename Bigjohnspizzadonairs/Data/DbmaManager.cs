@@ -819,7 +819,7 @@ WHERE
 					}
 				}
 			}
-
+            Debug.WriteLine($"Manager login validation for {userId} is {isValidLogin}");
 			return (isValidLogin);
 		}
 
@@ -895,6 +895,42 @@ WHERE
             }
             return shiftDetails;
         }
+
+        public async Task<bool> UpdateShiftTimeAsync(int shiftId, TimeSpan newStartTime, TimeSpan newEndTime)
+        {
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+
+                // Retrieve the current PunchIn time to use its date part
+                var getDateQuery = "SELECT PunchIn FROM TimeTracking WHERE TrackingId = @ShiftId";
+                DateTime currentPunchInDate;
+                using (var getDateCommand = new SqlCommand(getDateQuery, connection))
+                {
+                    getDateCommand.Parameters.AddWithValue("@ShiftId", shiftId);
+                    currentPunchInDate = (DateTime)await getDateCommand.ExecuteScalarAsync();
+                }
+
+                var newPunchIn = currentPunchInDate.Date + newStartTime;
+                var newPunchOut = currentPunchInDate.Date + newEndTime;
+
+                var query = @"
+            UPDATE TimeTracking
+            SET PunchIn = @NewPunchIn, PunchOut = @NewPunchOut
+            WHERE TrackingId = @ShiftId";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ShiftId", shiftId);
+                    command.Parameters.AddWithValue("@NewPunchIn", newPunchIn);
+                    command.Parameters.AddWithValue("@NewPunchOut", newPunchOut);
+
+                    var result = await command.ExecuteNonQueryAsync();
+                    return result > 0;
+                }
+            }
+        }
+
 
     }
 

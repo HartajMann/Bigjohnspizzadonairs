@@ -3,13 +3,18 @@
 @inject DbmaManager dbManager
 @using Bigjohnspizzadonairs.Data
 @using System.Diagnostics;
+@using ClosedXML.Excel;
+@using System;
+@using System.Collections.Generic;
+@using System.IO;
+@using System.Threading.Tasks;
 
 <div class="container mx-auto p-6">
 <h1 class="text-3xl font-semibold text-gray-800 mb-4">Employee Shifts Summary</h1>
 
 <div class="mb-6">
     <label for="monthSelector" class="block text-sm font-medium text-gray-700">Select Month:</label>
-        <input type="month" id="monthSelector" value="@SelectedMonthAsString" @onchange="OnMonthSelected" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        <input type="month" id="monthSelector" value="@SelectedMonthAsString" @onchange="OnMonthSelected" class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
     </div>
 
 @if (shiftSummaries != null)
@@ -22,6 +27,8 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee Name</th>
 
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours Worked</th>
+
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -33,14 +40,20 @@
 
                         <td class="px-6 py-4 whitespace-nowrap">@Math.Round(summary.TotalMinutesWorked / 60.0, 2)</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <button @onclick="() => GoToShiftDetails(summary.UserId)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded">
-                                    View Details
+                                <button @onclick="() => GoToShiftDetails(summary.UserId)" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 rounded-md w-full transition duration-200">
+                                    View 
                                 </button>
                             </td>
                     </tr>
                 }
             </tbody>
         </table>
+            <div class="flex justify-center mt-4">
+                <button @onclick="ExportToExcel" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                    Export to Excel
+                </button>
+            </div>
+
     </div>
 }
 
@@ -82,5 +95,32 @@ else
     {
         nav.NavigateTo($"/shift-details/{userId}");
     }
+    private async Task ExportToExcel()
+    {
+        var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), $"ShiftsSummary_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
 
+        using (var workbook = new XLWorkbook())
+        {
+            var worksheet = workbook.Worksheets.Add("Shifts Summary");
+            worksheet.Cell(1, 1).Value = "Employee ID";
+            worksheet.Cell(1, 2).Value = "Employee Name";
+            worksheet.Cell(1, 3).Value = "Hours Worked";
+
+            int row = 2;
+            foreach (var summary in shiftSummaries)
+            {
+                worksheet.Cell(row, 1).Value = summary.UserId;
+                worksheet.Cell(row, 2).Value = summary.Name;
+                worksheet.Cell(row, 3).Value = Math.Round(summary.TotalMinutesWorked / 60.0, 2);
+                row++;
+            }
+
+            worksheet.Columns().AdjustToContents(); // Adjust column width
+            workbook.SaveAs(filePath);
+        }
+
+        // Optionally, notify the user that the Excel file has been saved.
+        // This could be a simple alert or a more sophisticated UI notification.
+        Debug.WriteLine($"Exported to {filePath}");
+    }
 }

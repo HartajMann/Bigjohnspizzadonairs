@@ -2,6 +2,12 @@
 @using Bigjohnspizzadonairs.Data
 @inject NavigationManager nav
 @inject DbmaManager dbManager
+@using ClosedXML.Excel;
+@using System;
+@using System.Collections.Generic;
+@using System.IO;
+@using System.Threading.Tasks;
+
 <div class="container mx-auto p-6">
 <h1 class="text-3xl font-semibold text-gray-800 mb-4">Shift Details for Employee</h1>
 
@@ -33,12 +39,51 @@
 
                         <td class="px-6 py-4 whitespace-nowrap">@Math.Round(shift.TotalMinutesWorked / 60.0, 2)</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <button @onclick="() => EditShift(shift.ShiftId)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded">Edit</button>
+                                <button @onclick="() => EditShift(shift.ShiftId, shift.StartTime, shift.EndTime)" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 rounded-md w-full transition duration-200">Edit</button>
                         </td>
                     </tr>
                 }
             </tbody>
+                
         </table>
+            <div class="flex justify-center mt-4">
+                <button @onclick="ExportToExcel" class="bg-[#8C8C73] hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                    Export to Excel
+                </button>
+            </div>
+            @if (isEditModalOpen)
+            {
+                <div class="fixed z-10 inset-0 overflow-y-auto">
+                    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <!-- Modal overlay -->
+                        <div class="fixed inset-0 transition-opacity" @onclick="CloseModal">
+                            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+                        </div>
+
+                        <!-- Modal content -->
+                        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" role="dialog" aria-modal="true" aria-labelledby="modal-headline">
+                            <div class="bg-white px-6 py-5 sm:p-6">
+                                <div class="sm:flex sm:items-start">
+                                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-headline">Edit Shift</h3>
+                                        <div class="mt-2">
+                                            <p class="text-sm text-gray-500 py-3">Select new start and end times:</p>
+                                            <input type="time" value="@newStartTime.ToString(@"hh\:mm")" @onchange="UpdateEditingStartTime"  class="border-gray-300 rounded-md">
+                                            <input type="time" value="@newEndTime.ToString(@"hh\:mm")" @onchange="UpdateEditingEndTime" class="border-gray-300 rounded-md">
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row ">
+                                <button type="button" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#8C8C73] hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8C8C73]" @onclick="SaveShiftEdit">Save</button>
+                                <button type="button" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-black bg-white" @onclick="CloseModal">Cancel</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            }
     </div>
 }
 else
@@ -53,6 +98,11 @@ else
     private List<ShiftDetail> employeeShifts;
     private double totalHoursWorked => employeeShifts?.Sum(shift => shift.TotalMinutesWorked) / 60.0 ?? 0;
     private string totalHoursFormatted => $"{Math.Floor(totalHoursWorked)}:{(totalHoursWorked - Math.Floor(totalHoursWorked)) * 60:00}";
+    private bool isEditModalOpen = false;
+    private TimeSpan newStartTime;
+    private TimeSpan newEndTime;
+    private int currentEditingShiftId;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,8 +112,79 @@ else
         }
     }
 
-    private void EditShift(int shiftId)
+    private void EditShift(int shiftId, TimeSpan currentStartTime, TimeSpan currentEndTime)
     {
-        nav.NavigateTo($"/edit-shift/{shiftId}");
+        currentEditingShiftId = shiftId;
+        newStartTime = currentStartTime;
+        newEndTime = currentEndTime;
+        isEditModalOpen = true;
+    }
+    private void UpdateEditingEndTime(ChangeEventArgs e)
+    {
+        if (TimeSpan.TryParse(e.Value?.ToString(), out var endTime))
+        {
+            newEndTime = endTime;
+        }
+    }
+    private void UpdateEditingStartTime(ChangeEventArgs e)
+    {
+        if (TimeSpan.TryParse(e.Value?.ToString(), out var endTime))
+        {
+            newStartTime = endTime;
+        }
+    }
+    private async Task SaveShiftEdit()
+    {
+        await dbManager.UpdateShiftTimeAsync(currentEditingShiftId, newStartTime, newEndTime);
+        isEditModalOpen = false;
+        await LoadShiftDetails(); // Reload the shifts details to reflect the update
+    }
+
+    private async Task LoadShiftDetails()
+    {
+        employeeShifts = await dbManager.GetShiftDetailsForEmployee(UserId);
+        StateHasChanged();
+    }
+
+    private void CloseModal()
+    {
+        isEditModalOpen = false;
+    }
+    private async Task ExportToExcel()
+    {
+        var employeeShifts = await dbManager.GetShiftDetailsForEmployee(UserId); // Fetch the shifts
+        var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "EmployeeShifts"+UserId+".xlsx");
+
+        await GenerateAndSaveExcelFile(employeeShifts, filePath);
+
+        // Optional: Notify the user that the file has been saved
+    }
+
+    public async Task GenerateAndSaveExcelFile(List<ShiftDetail> employeeShifts, string filePath)
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            var worksheet = workbook.Worksheets.Add("Employee Shifts");
+            worksheet.Cell("A1").Value = "Date";
+            worksheet.Cell("B1").Value = "Punch In";
+            worksheet.Cell("C1").Value = "Punch Out";
+            worksheet.Cell("D1").Value = "Hours Worked";
+
+            int currentRow = 2;
+            foreach (var shift in employeeShifts)
+            {
+                worksheet.Cell(currentRow, 1).Value = shift.ShiftDate.ToShortDateString();
+                worksheet.Cell(currentRow, 2).Value = shift.StartDateTime.ToString("hh\\:mm tt");
+                worksheet.Cell(currentRow, 3).Value = shift.EndDateTime.ToString("hh\\:mm tt");
+                worksheet.Cell(currentRow, 4).Value = Math.Round(shift.TotalMinutesWorked / 60.0, 2);
+                currentRow++;
+            }
+
+            // Adjust column widths to content
+            worksheet.Columns().AdjustToContents();
+
+            // Save the workbook to a file
+            workbook.SaveAs(filePath);
+        }
     }
 }
