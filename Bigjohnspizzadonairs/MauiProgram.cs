@@ -1,6 +1,7 @@
 ﻿using Bigjohnspizzadonairs.Data;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using static Bigjohnspizzadonairs.Pages.ShiftDetais;
 
 namespace Bigjohnspizzadonairs
 {
@@ -19,6 +20,7 @@ namespace Bigjohnspizzadonairs
 				});
 
             builder.Services.AddTransient<DbmaManager>();
+            builder.Services.AddSingleton<IFileSaveService, FileSaveService>();
 
             builder.Services.AddMauiBlazorWebView();
 

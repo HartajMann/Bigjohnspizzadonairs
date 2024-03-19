@@ -2,6 +2,14 @@
 @using Bigjohnspizzadonairs.Data
 @inject NavigationManager nav
 @inject DbmaManager dbManager
+@using ClosedXML.Excel;
+@using System;
+@using System.Collections.Generic;
+@using System.IO;
+@using System.Threading.Tasks;
+
+@using System.Windows.Forms;
+@inject IFileSaveService FileSaveService1
 
 <div class="container mx-auto p-6 overflow-hidden">
     <div class="overflow-y-auto">
@@ -38,6 +46,12 @@
             </tbody>
         </table>
     </div>
+        <div class="flex justify-center mt-4">
+            <button @onclick="ExportToExcel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                Export to Excel
+            </button>
+        </div>
+
     </div>
 </div>
 @code {
@@ -68,4 +82,62 @@
 	{
 		nav.NavigateTo($"/edit-inventory/{inventoryId}");
 	}
+    private async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            var worksheet = workbook.Worksheets.Add("Inventory List");
+            worksheet.Cell(1, 1).Value = "Inventory Code";
+            worksheet.Cell(1, 2).Value = "Inventory Name";
+            worksheet.Cell(1, 3).Value = "Quantity";
+            worksheet.Cell(1, 4).Value = "Inventory Branch Name";
+            worksheet.Cell(1, 5).Value = "Expiry Date";
+            worksheet.Cell(1, 6).Value = "Description";
+
+            int currentRow = 2;
+            foreach (var item in inventoryItems)
+            {
+                worksheet.Cell(currentRow, 1).Value = item.InventoryId;
+                worksheet.Cell(currentRow, 2).Value = item.Name;
+                worksheet.Cell(currentRow, 3).Value = item.Quantity;
+                worksheet.Cell(currentRow, 4).Value = item.Branch;
+                worksheet.Cell(currentRow, 5).Value = item.ExpiryDate;
+                worksheet.Cell(currentRow, 6).Value = item.Description;
+                currentRow++;
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = await FileSaveService1.SaveFileAsync(content, "InventoryList.xlsx", "Excel files (*.xlsx)|*.xlsx");
+
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    // Notify the user or handle the saved file path as needed
+                }
+            }
+        }
+    }
+    public class FileSaveService : IFileSaveService
+    {
+        public async Task<string> SaveFileAsync(byte[] fileContents, string defaultFileName, string fileTypeFilter)
+        {
+            using var saveFileDialog = new SaveFileDialog
+                {
+                    FileName = defaultFileName,
+                    Filter = fileTypeFilter
+                };
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                await File.WriteAllBytesAsync(saveFileDialog.FileName, fileContents);
+                return saveFileDialog.FileName;
+            }
+
+            return null;
+        }
+    }
 }

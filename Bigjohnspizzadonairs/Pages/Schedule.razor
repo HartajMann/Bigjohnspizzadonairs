@@ -72,7 +72,21 @@
             </div>
         }
     </div>
-	
+
+    @if (showWarningModal)
+    {
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg p-4">
+                <h2 class="text-lg">Schedule Outside of Availability</h2>
+                <p>You are about to schedule <strong>@employeeNameForWarning</strong> outside of their available hours. Do you want to proceed?</p>
+                <div class="mt-4 flex space-x-2">
+                    <button @onclick="ConfirmOutOfAvailabilitySchedule" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Proceed</button>
+                    <button @onclick="() => showWarningModal = false" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
 </div>
 
 @code {
@@ -80,6 +94,9 @@
     private List<AvailabilityModel> availableEmployees = new();
     private string errorMessage;
     private Dictionary<int, (TimeSpan? StartTime, TimeSpan? EndTime)> employeeShifts = new();
+    private bool showWarningModal = false;
+    private ScheduleModel tempScheduleToSave;
+    private string employeeNameForWarning = string.Empty;
 
 
 
@@ -150,29 +167,49 @@
         }
     }
 
-
     private async Task SaveSchedule()
     {
-        List<ScheduleModel> schedules = new List<ScheduleModel>();
+        List<ScheduleModel> schedulesToSave = new List<ScheduleModel>();
+
         foreach (var kvp in employeeShifts)
         {
             var employee = availableEmployees.First(e => e.EmployeeId == kvp.Key);
             if (employee.IsScheduled && kvp.Value.StartTime.HasValue && kvp.Value.EndTime.HasValue)
             {
-                schedules.Add(new ScheduleModel
+                var schedule = new ScheduleModel
                     {
                         EmployeeId = kvp.Key,
                         ScheduleDate = selectedDate.Value,
                         StartTime = selectedDate.Value.Date.Add(kvp.Value.StartTime.Value),
                         EndTime = selectedDate.Value.Date.Add(kvp.Value.EndTime.Value)
-                    });
+                    };
+
+                // Get the time component of the DateTime to compare with TimeSpan
+                TimeSpan scheduleStartTime = schedule.StartTime.TimeOfDay;
+                TimeSpan scheduleEndTime = schedule.EndTime.TimeOfDay;
+
+                // Check if scheduling is within the employee's availability
+                if (scheduleStartTime < employee.StartTime || scheduleEndTime > employee.EndTime)
+                {
+                    employeeNameForWarning = employee.Name;  // Set the employee's name here
+                    showWarningModal = true;
+                    tempScheduleToSave = schedule;
+                    return;
+                }
+
+                schedulesToSave.Add(schedule);
             }
         }
 
+        await ConfirmSaveSchedules(schedulesToSave);
+    }
+
+    private async Task ConfirmSaveSchedules(List<ScheduleModel> schedules)
+    {
         bool success = await dbManager.SaveScheduleAsync(schedules);
         if (success)
         {
-            // Handle success, e.g., navigate to a success page or show a success message
+            // Handle success
         }
         else
         {
@@ -209,6 +246,11 @@
             // Notify the component that it needs to re-render because the state has changed
             StateHasChanged();
         }
+    }
+    private async Task ConfirmOutOfAvailabilitySchedule()
+    {
+        showWarningModal = false;
+        await ConfirmSaveSchedules(new List<ScheduleModel> { tempScheduleToSave });
     }
 
 

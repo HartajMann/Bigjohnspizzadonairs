@@ -9,7 +9,11 @@
 @using System.IO;
 @using System.Threading.Tasks;
 
+@using System.Windows.Forms;
+@inject IFileSaveService FileSaveService1
+
 <div class="container mx-auto p-6">
+
 <h1 class="text-3xl font-semibold text-gray-800 mb-4">Employee Shifts Summary</h1>
 
 <div class="mb-6">
@@ -97,7 +101,7 @@ else
     }
     private async Task ExportToExcel()
     {
-        var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), $"ShiftsSummary_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+        var shiftSummaries = await dbManager.GetShiftSummariesByMonthAsync(selectedMonth.Value.Year, selectedMonth.Value.Month);
 
         using (var workbook = new XLWorkbook())
         {
@@ -115,12 +119,39 @@ else
                 row++;
             }
 
-            worksheet.Columns().AdjustToContents(); // Adjust column width
-            workbook.SaveAs(filePath);
-        }
+            worksheet.Columns().AdjustToContents();
 
-        // Optionally, notify the user that the Excel file has been saved.
-        // This could be a simple alert or a more sophisticated UI notification.
-        Debug.WriteLine($"Exported to {filePath}");
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = await FileSaveService1.SaveFileAsync(content, "ShiftsSummary.xlsx", "Excel files (*.xlsx)|*.xlsx");
+
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    // Notify the user or handle the saved file path as needed
+                    Console.WriteLine($"File saved to {fileName}");
+                }
+            }
+        }
+    }
+    public class FileSaveService : IFileSaveService
+    {
+        public async Task<string> SaveFileAsync(byte[] fileContents, string defaultFileName, string fileTypeFilter)
+        {
+            using var saveFileDialog = new SaveFileDialog
+                {
+                    FileName = defaultFileName,
+                    Filter = fileTypeFilter
+                };
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                await File.WriteAllBytesAsync(saveFileDialog.FileName, fileContents);
+                return saveFileDialog.FileName;
+            }
+
+            return null;
+        }
     }
 }
