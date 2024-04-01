@@ -2,6 +2,9 @@
 @inject NavigationManager nav
 @inject DbmaManager dbManager
 @using Bigjohnspizzadonairs.Data
+@using System.Net.Mail
+@using System.Text
+
 
 
 <div class="container mx-auto p-6">
@@ -36,23 +39,98 @@
             </tbody>
         </table>
     </div>
+    <div class="mt-4">
+        <button @onclick="SendScheduleEmail" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Send Schedule Email</button>
+    </div>
+    <div class="mt-4">
+		<p>@Message</p>
+        </div>
 </div>
 @code {
     [Parameter]
     public int EmployeeId { get; set; }
+    private EmployeeModel employeeInfo;
+    private string Message { get; set; } = "";
+
 
     private List<ScheduledEmployeeModel> weeklySchedule = new List<ScheduledEmployeeModel>();
     private string FormatTime(TimeSpan time)
     {
-        return time != TimeSpan.Zero ? time.ToString(@"hh\:mm") : "N/A";
+        // Convert TimeSpan to DateTime for proper formatting
+        if (time == TimeSpan.Zero) return "N/A";
+        var dateTime = DateTime.Today.Add(time);
+        return dateTime.ToString("hh:mm tt");
     }
+
+
 
     protected override async Task OnInitializedAsync()
     {
         weeklySchedule = await dbManager.GetWeeklyScheduleForEmployee(EmployeeId);
+        employeeInfo = await dbManager.GetEmployeeById(EmployeeId);
     }
     private void HandleBackup()
     {
         nav.NavigateTo("/employee-management");
     }
+    private async Task SendScheduleEmail()
+    {
+        if (employeeInfo == null || weeklySchedule == null || !weeklySchedule.Any())
+        {
+            Message = "No employee info or schedule found.";
+            return;
+        }
+
+        try
+        {
+            var scheduleHtml = BuildScheduleHtml(weeklySchedule);
+
+            using (MailMessage mail = new MailMessage())
+            {
+                mail.From = new MailAddress("hartajmann459@gmail.com");
+                mail.To.Add(employeeInfo.Email);
+                mail.Subject = "Your Weekly Schedule";
+                mail.Body = $"<h1>Weekly Schedule for {employeeInfo.Name}</h1>{scheduleHtml}";
+                mail.IsBodyHtml = true;
+
+                using (SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587))
+                {
+                    smtp.Credentials = new System.Net.NetworkCredential("hartajmann459@gmail.com", "iydzjzwhtlxzxvec");
+                    smtp.EnableSsl = true;
+                    await smtp.SendMailAsync(mail);
+                    Message = "Email Sent Successfully";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error sending email: {ex.Message}";
+        }
+    }
+
+    private string BuildScheduleHtml(List<ScheduledEmployeeModel> weeklySchedule)
+    {
+        var scheduleHtml = new StringBuilder();
+        scheduleHtml.Append("<table style='width: 100%; border-collapse: collapse;'>");
+        scheduleHtml.Append("<thead><tr>");
+        scheduleHtml.Append("<th style='border: 1px solid #dddddd; text-align: left; padding: 8px;'>Date</th>");
+        scheduleHtml.Append("<th style='border: 1px solid #dddddd; text-align: left; padding: 8px;'>Start Time</th>");
+        scheduleHtml.Append("<th style='border: 1px solid #dddddd; text-align: left; padding: 8px;'>End Time</th>");
+        scheduleHtml.Append("</tr></thead>");
+        scheduleHtml.Append("<tbody>");
+
+        foreach (var schedule in weeklySchedule)
+        {
+            scheduleHtml.Append("<tr>");
+            scheduleHtml.Append($"<td style='border: 1px solid #dddddd; text-align: left; padding: 8px;'>{schedule.ShiftDate:yyyy-MM-dd}</td>");
+            scheduleHtml.Append($"<td style='border: 1px solid #dddddd; text-align: left; padding: 8px;'>{FormatTime(schedule.StartTime)}</td>");
+            scheduleHtml.Append($"<td style='border: 1px solid #dddddd; text-align: left; padding: 8px;'>{FormatTime(schedule.EndTime)}</td>");
+            scheduleHtml.Append("</tr>");
+        }
+
+        scheduleHtml.Append("</tbody></table>");
+
+        return scheduleHtml.ToString();
+    }
+
 }

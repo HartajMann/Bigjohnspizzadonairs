@@ -208,18 +208,45 @@ namespace Bigjohnspizzadonairs.Data
             return employees;
         }
 
-        public async Task<bool> DeleteEmployeeAsync(int employeeId)
+        public async Task<bool> DeleteEmployeeAsync(int EmployeeId)
         {
             using (var sqlConnection = new SqlConnection(connString))
             {
                 await sqlConnection.OpenAsync();
-                var command = new SqlCommand("DELETE FROM Employees WHERE EmployeeId = @EmployeeId", sqlConnection);
-                command.Parameters.AddWithValue("@EmployeeId", employeeId);
+                using (var transaction = sqlConnection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Delete referencing rows from EmployeeAvailability
+                        var deleteAvailabilityCommand = new SqlCommand("DELETE FROM EmployeeAvailability WHERE EmployeeId = @EmployeeId", sqlConnection, transaction);
+                        deleteAvailabilityCommand.Parameters.AddWithValue("@EmployeeId", EmployeeId);
+                        await deleteAvailabilityCommand.ExecuteNonQueryAsync();
 
-                int result = await command.ExecuteNonQueryAsync();
-                return result > 0;
+                        // Delete referencing rows from EmployeeShifts
+                        var deleteShiftsCommand = new SqlCommand("DELETE FROM EmployeeShifts WHERE EmployeeId = @EmployeeId", sqlConnection, transaction);
+                        deleteShiftsCommand.Parameters.AddWithValue("@EmployeeId", EmployeeId);
+                        await deleteShiftsCommand.ExecuteNonQueryAsync();
+
+                        // Finally, delete the employee
+                        var deleteEmployeeCommand = new SqlCommand("DELETE FROM Employees WHERE EmployeeId = @EmployeeId", sqlConnection, transaction);
+                        deleteEmployeeCommand.Parameters.AddWithValue("@EmployeeId", EmployeeId);
+                        int result = await deleteEmployeeCommand.ExecuteNonQueryAsync();
+
+                        transaction.Commit();
+
+                        return result > 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Error deleting employee: " + ex.Message);
+                        transaction.Rollback();
+                        return false;
+                    }
+                }
             }
         }
+
+
 
         public async Task<EmployeeModel> GetEmployeeAsync(int employeeId)
         {
@@ -567,6 +594,37 @@ namespace Bigjohnspizzadonairs.Data
 
             return schedules;
         }
+        public async Task<EmployeeModel> GetEmployeeById(int employeeId)
+        {
+            EmployeeModel employee = null;
+
+            using (var connection = new SqlConnection(connString))
+            {
+                await connection.OpenAsync();
+                var query = "SELECT EmployeeId, Name, Email FROM Employees WHERE EmployeeId = @EmployeeId";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@EmployeeId", employeeId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            employee = new EmployeeModel
+                            {
+                                EmployeeId = reader.GetInt32(0),
+                                Name = reader.GetString(1),
+                                Email = reader.GetString(2)
+                            };
+                        }
+                    }
+                }
+            }
+
+            return employee;
+        }
+
         public async Task<bool> AddInventoryItemAsync(string branch, string Name, string description, int quantity, int alertQuantity, DateTime? expiryDate)
         {
             try
