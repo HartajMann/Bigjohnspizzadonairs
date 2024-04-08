@@ -58,7 +58,7 @@
             </div>
         </div>
         <div class="mt-4 flex justify-end">
-            <button @onclick="SaveSchedule"  class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#8C8C73] hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8C8C73]">
+            <button @onclick="SaveSchedule" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#8C8C73] hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8C8C73]">
                 Save Schedule
             </button>
         </div>
@@ -72,7 +72,18 @@
             </div>
         }
     </div>
-
+    @if (showConfirmationModal)
+    {
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg p-4">
+                <h2 class="text-lg">Schedule Saved</h2>
+                <p>The schedule has been successfully saved.</p>
+                <div class="mt-4 flex justify-end">
+                    <button @onclick="() => showConfirmationModal = false" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">OK</button>
+                </div>
+            </div>
+        </div>
+    }
     @if (showWarningModal)
     {
         <div class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4">
@@ -97,6 +108,7 @@
     private bool showWarningModal = false;
     private ScheduleModel tempScheduleToSave;
     private string employeeNameForWarning = string.Empty;
+    private bool showConfirmationModal = false;
 
 
 
@@ -209,7 +221,7 @@
         bool success = await dbManager.SaveScheduleAsync(schedules);
         if (success)
         {
-            // Handle success
+            showConfirmationModal = true;
         }
         else
         {

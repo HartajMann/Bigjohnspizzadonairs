@@ -1,34 +1,43 @@
 ﻿@page "/email"
-@using System.Net.Mail
-<h3>Email</h3>
-<button @onclick="SendEmail">email</button>
-<p>@Message</p>
-@code {
-	private string Message { get; set; } = "";
-	private void SendEmail()
-	{
-		try
-		{
-			using (MailMessage mail=new MailMessage())
-			{
-				mail.From = new MailAddress("hartajmann459@gmail.com");
-				mail.To.Add("beneficialghost18@gmail.com");
-				mail.Subject = "Test Email";
-				mail.Body = "This is a test email";	
-				mail.IsBodyHtml = true;	
-				using (SmtpClient smtp=new SmtpClient("smtp.gmail.com", 587))
-				{
-					smtp.Credentials = new System.Net.NetworkCredential("hartajmann459@gmail.com", "iydzjzwhtlxzxvec");
-					smtp.EnableSsl = true;
-					smtp.Send(mail);
-					Message= "Email Sent Successfully";
-				}
-			}
+@using MailKit
+@using MailKit.Net.Smtp
+@using MimeKit
+@using System.Diagnostics
+@using System.IO
 
-		}
-		catch (Exception ex)
-		{
-			Message = ex.Message;
-		}
-	}
+<h3>Email</h3>
+<button @onclick="SendEmail">Send Email</button>
+<p>@Message</p>
+
+@code {
+    private string Message { get; set; } = "";
+
+    private async Task SendEmail()
+    {
+        try
+        {
+            var email = new MimeMessage();
+            email.From.Add(MailboxAddress.Parse("hartajmann459@gmail.com"));
+            email.To.Add(MailboxAddress.Parse("hmann459@gmail.com"));
+            email.Subject = "Test Email";
+            email.Body = new TextPart("plain") { Text = "This is a test email" };
+
+            // Save the log file in the local application data folder
+            string logFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "smtp.log");
+
+            using (var smtp = new SmtpClient(new ProtocolLogger(logFilePath)))
+            {
+                await smtp.ConnectAsync("smtp.gmail.com", 465, MailKit.Security.SecureSocketOptions.SslOnConnect);
+                await smtp.AuthenticateAsync("hartajmann459@gmail.com", "iydzjzwhtlxzxvec");
+                await smtp.SendAsync(email);
+                await smtp.DisconnectAsync(true);
+                Message = "Email sent successfully";
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Failed to send email: {ex.Message}";
+            Debug.WriteLine($"Error sending email: {ex}");
+        }
+    }
 }

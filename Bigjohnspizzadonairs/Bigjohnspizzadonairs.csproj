@@ -68,10 +68,12 @@
     <ItemGroup>
         <PackageReference Include="ClosedXML" Version="0.102.2" />
         <PackageReference Include="ClosedXML.Report" Version="0.2.9" />
+        <PackageReference Include="MailKit" Version="4.4.0" />
         <PackageReference Include="Microsoft.AspNet.Identity.Core" Version="2.2.4" />
         <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
         <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0" />
+        <PackageReference Include="NETCore.MailKit" Version="2.1.0" />
     </ItemGroup>
 
 </Project>

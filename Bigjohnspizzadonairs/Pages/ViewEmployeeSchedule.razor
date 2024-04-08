@@ -2,8 +2,13 @@
 @inject NavigationManager nav
 @inject DbmaManager dbManager
 @using Bigjohnspizzadonairs.Data
-@using System.Net.Mail
 @using System.Text
+@using MailKit
+@using MailKit.Net.Smtp
+@using MimeKit
+@using System.Diagnostics
+@using System.IO
+
 
 
 
@@ -83,23 +88,25 @@
 
         try
         {
-            var scheduleHtml = BuildScheduleHtml(weeklySchedule);
+            var email = new MimeMessage();
+            email.From.Add(new MailboxAddress("Sender Name", "gurmaherpalsingh123@gmail.com"));
+            email.To.Add(new MailboxAddress(employeeInfo.Name, employeeInfo.Email));
+            email.Subject = "Your Weekly Schedule";
 
-            using (MailMessage mail = new MailMessage())
-            {
-                mail.From = new MailAddress("hartajmann459@gmail.com");
-                mail.To.Add(employeeInfo.Email);
-                mail.Subject = "Your Weekly Schedule";
-                mail.Body = $"<h1>Weekly Schedule for {employeeInfo.Name}</h1>{scheduleHtml}";
-                mail.IsBodyHtml = true;
-
-                using (SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587))
+            var builder = new BodyBuilder
                 {
-                    smtp.Credentials = new System.Net.NetworkCredential("hartajmann459@gmail.com", "iydzjzwhtlxzxvec");
-                    smtp.EnableSsl = true;
-                    await smtp.SendMailAsync(mail);
-                    Message = "Email Sent Successfully";
-                }
+                    HtmlBody = $"<h1>Weekly Schedule for {employeeInfo.Name}</h1>{BuildScheduleHtml(weeklySchedule)}"
+                };
+            email.Body = builder.ToMessageBody();
+            string logFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "smtp.log");
+
+            using (var smtp = new SmtpClient(new ProtocolLogger(logFilePath)))
+            {
+                await smtp.ConnectAsync("smtp.gmail.com", 465, MailKit.Security.SecureSocketOptions.SslOnConnect);
+                await smtp.AuthenticateAsync("hartajmann459@gmail.com", "iydzjzwhtlxzxvec");
+                await smtp.SendAsync(email);
+                await smtp.DisconnectAsync(true);
+                Message = "Email sent successfully";
             }
         }
         catch (Exception ex)
