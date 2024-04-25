@@ -20,3 +20,6 @@ Big John's Employee Management System is a comprehensive .NET Blazor MAUI Window
 - **MailKit**: Integrated for sending emails directly from the application.
 - **ClosedXML**: Employed for generating Excel files from shift data.
 - **C#**: The primary programming language used for developing the application.
+
+## Images
+<img src="[https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/eca22da4-e4d8-4094-bd0d-40a10db42db9]" width="200" height="auto">
