@@ -14,8 +14,9 @@ Big John's Employee Management System is a comprehensive .NET Blazor MAUI Window
 
 ## Technologies Used
 
-- **Frontend/Backend:** .NET 7 .NET Blazor MAUI
-- **Database:** Microsoft SQL Server
-- **Authentication:** Manager-level authentication
-- **Styling:** Tailwind CSS
-- **Programming Language:** C#
+- **.NET MAUI Blazor**: Used for creating the cross-platform desktop application.
+- **Tailwind CSS**: Utilized for styling the application.
+- **SQL Server Management Studio (SSMS)**: Used for database management.
+- **MailKit**: Integrated for sending emails directly from the application.
+- **ClosedXML**: Employed for generating Excel files from shift data.
+- **C#**: The primary programming language used for developing the application.
