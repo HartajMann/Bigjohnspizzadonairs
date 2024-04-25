@@ -22,15 +22,15 @@ Big John's Employee Management System is a comprehensive .NET Blazor MAUI Window
 - **C#**: The primary programming language used for developing the application.
 
 ## Images
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/eca22da4-e4d8-4094-bd0d-40a10db42db9" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/eca22da4-e4d8-4094-bd0d-40a10db42db9" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/2e570dfc-766c-4ea4-b6b9-33ee411edc00" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/2e570dfc-766c-4ea4-b6b9-33ee411edc00" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/9cfd704e-db10-47eb-bb50-2eab41821fdd" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/9cfd704e-db10-47eb-bb50-2eab41821fdd" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/7fcf0837-f67d-4030-a0f1-bdbacf0c47c6" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/7fcf0837-f67d-4030-a0f1-bdbacf0c47c6" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/5607da2f-a0a8-4ef4-8053-dbf678b2220a" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/5607da2f-a0a8-4ef4-8053-dbf678b2220a" width="300" height="auto">
 
 <img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/627c95a0-9674-4539-9667-22dd689289df" width="450" height="auto">
 
