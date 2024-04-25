@@ -32,19 +32,19 @@ Big John's Employee Management System is a comprehensive .NET Blazor MAUI Window
 
 <img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/5607da2f-a0a8-4ef4-8053-dbf678b2220a" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/627c95a0-9674-4539-9667-22dd689289df" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/627c95a0-9674-4539-9667-22dd689289df" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/59c14340-bf34-4afb-8464-953acbfa3546" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/59c14340-bf34-4afb-8464-953acbfa3546" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/9f493cdf-41a3-40ea-8912-d151d4149234" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/9f493cdf-41a3-40ea-8912-d151d4149234" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/37270d00-fe32-4f15-97d4-415a9c6e0035" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/37270d00-fe32-4f15-97d4-415a9c6e0035" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/19b05960-7409-4b88-a917-2d83721fb08a" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/19b05960-7409-4b88-a917-2d83721fb08a" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/e64f42a2-4f42-4115-a355-52abf778f247" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/e64f42a2-4f42-4115-a355-52abf778f247" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/da10de6a-5293-4ab2-ac9b-0b1b2bfb9704" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/da10de6a-5293-4ab2-ac9b-0b1b2bfb9704" width="300" height="auto">
 
-<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/85c43dd1-366f-4cff-aa95-e11d19513435" width="450" height="auto">
+<img src="https://github.com/HartajMann/Bigjohnspizzadonairs/assets/99726645/85c43dd1-366f-4cff-aa95-e11d19513435" width="300" height="auto">
 
